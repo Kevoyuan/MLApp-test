@@ -156,10 +156,8 @@ elif classifier == "MLP":
         learning_rate_init=learning_rate_init
     )
 
-add_vertical_space(3)
 
 # Create three columns
-col1, col2, col3 = st.columns([2, 2, 1])
 
 classifiers = {
     'KNN': knn_clf if 'knn_clf' in locals() else None,
@@ -175,8 +173,13 @@ selected_classifier = classifiers[classifier]
 
 
 # if col1.button("🙈 Preview"):
+st.write('Preview of the classifier:')
+
 st.write(selected_classifier)
-    # Add your training code/ function here!
-if st.button("🙈 Training!"):
+# Add your training code/ function here!
+add_vertical_space(3)
+col1, col2, col3 = st.columns([2, 2, 1])
+
+if col2.button("🙈 Training!"):
 
     switch_page("ActiveLearning")
