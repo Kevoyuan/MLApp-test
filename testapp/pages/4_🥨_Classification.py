@@ -5,7 +5,6 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
-from streamlit_toggle import st_toggle_switch
 from streamlit_extras.switch_page_button import switch_page
 from streamlit_extras.add_vertical_space import add_vertical_space
 
@@ -14,45 +13,45 @@ st.set_page_config(
     page_icon="🎯",
     # layout="wide"
 )
-classifier = option_menu('Classification Model', ['KNN', 'SVC', 'Random Forest', 'MLP'], 
-    icons=['-', '-', "-", '-'], 
-    menu_icon="bi bi-diagram-3-fill", default_index=0, orientation="horizontal",
-    styles={
-        "container": {
-            "padding": "0!important", 
-            "background-color": '#FFFFFF',  # lighter grey color for macOS-like appearance
-            "text-align": "center",
-            "display": "flex",
-            "justify-content": "space-around",
-            "align-items": "left",
-            "list-style-type": "none",
-            "margin": "0"
-        },
-        "nav-link": {
-            "font-size": "15px", 
-            "text-align": "center", 
-            # "margin":"30px", 
-            # "--hover-color": "#007BFF", 
-            "color": "#333333",  
-            "font-weight": "100",
-            "text-decoration": "none",
-            "transition": "1s",
-            "font-weight": "700"  
-            
-            
-        },
-        "nav-link-selected": {
-            "background-color": 'white',
-            "text-decoration": "underline",
-            "font-weight": "700",
-            # "color": "white",  
-              
-        }
+classifier = option_menu('Classification Model', ['KNN', 'SVC', 'Random Forest', 'MLP'],
+                         icons=['-', '-', "-", '-'],
+                         menu_icon="bi bi-diagram-3-fill", default_index=0, orientation="horizontal",
+                         styles={
+    "container": {
+        "padding": "0!important",
+        "background-color": '#FFFFFF',  # lighter grey color for macOS-like appearance
+        "text-align": "center",
+        "display": "flex",
+        "justify-content": "space-around",
+        "align-items": "left",
+        "list-style-type": "none",
+        "margin": "0"
+    },
+    "nav-link": {
+        "font-size": "15px",
+        "text-align": "center",
+        # "margin":"30px",
+        # "--hover-color": "#007BFF",
+        "color": "#333333",
+        "font-weight": "100",
+        "text-decoration": "none",
+        "transition": "1s",
+        "font-weight": "700"
+
+
+    },
+    "nav-link-selected": {
+        "background-color": 'white',
+        "text-decoration": "underline",
+        "font-weight": "700",
+        # "color": "white",
+
     }
+}
 )
 
 
-if classifier=='KNN':
+if classifier == 'KNN':
 
     # Depending on the classifier selected, display the appropriate options
     st.header("KNN")
@@ -81,7 +80,7 @@ if classifier=='KNN':
     )
 
 
-elif classifier=="SVC":
+elif classifier == "SVC":
     st.header("SVC")
     col1, col2 = st.columns(2)
     with col1:
@@ -89,7 +88,6 @@ elif classifier=="SVC":
     with col2:
         kernel = st.selectbox(
             'kernel', ('linear', 'rbf', 'sigmoid', 'precomputed'))
-
 
     col1, col2 = st.columns(2)
     with col1:
@@ -101,7 +99,7 @@ elif classifier=="SVC":
         gamma=gamma
     )
 
-elif classifier=="Random Forest":
+elif classifier == "Random Forest":
     st.header("Random Forest")
     col1, col2 = st.columns(2)
     with col1:
@@ -124,7 +122,7 @@ elif classifier=="Random Forest":
         max_features=max_features
     )
 
-elif classifier=="MLP":
+elif classifier == "MLP":
     st.header("MLP")
     col1, col2 = st.columns(2)
 
@@ -174,16 +172,11 @@ selected_classifier = classifiers[classifier]
 
 # if selected_classifier:
 #     st.write(selected_classifier)
-    
 
-if col2.button("🙈 Training!"):
-    st.write(selected_classifier)
-    ## Add your training code/ function here!    
-    
-    
-    
-    
-    
-    
-    
+
+# if col1.button("🙈 Preview"):
+st.write(selected_classifier)
+    # Add your training code/ function here!
+if st.button("🙈 Training!"):
+
     switch_page("ActiveLearning")
