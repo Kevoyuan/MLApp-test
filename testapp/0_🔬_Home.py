@@ -4,7 +4,7 @@ from streamlit_extras.add_vertical_space import add_vertical_space
 from streamlit_extras.switch_page_button import switch_page
 
 from streamlit_image_coordinates import streamlit_image_coordinates
-import json
+
 from PIL import Image, ImageDraw
 import os
 import pandas as pd
@@ -35,7 +35,7 @@ for label in labels:
 # st.write(label_lists['list_top_left_coordinates_WBC'])
 
 
-def is_point_in_box(point, top_left_coordinates, box_size=64):
+def is_point_in_box(point, top_left_coordinates, box_size=96):
     px, py = point
 
     for bx, by in top_left_coordinates:
@@ -58,18 +58,12 @@ def draw_box_if_point_in_box(draw, box, cell_position, points):
             draw.rectangle(box, outline="red", width=2)
 
 
-def get_box_coordinate(x, y):
-    cell_position = (x, y)
-    box = (x, y, x + 64, y + 64)
-    return cell_position, box
-
-
 def change_label(point, new_label, df, csv_path='testapp/cell_input.csv'):
     """Change the label of the cell at the given point to the new label and save the changes to a CSV file."""
     for i, row in df.iterrows():
         x, y = map(int, row['coordinate_top_left'].split())
         cell_position = (x, y)
-        box_size = 64
+        box_size = 96
         x1, y1 = cell_position
         x2, y2 = x1 + box_size, y1 + box_size
         px, py = point
@@ -102,6 +96,7 @@ def styled_button(col, text, label, df):
     # If the button is not clicked but a point in the image is clicked, reset the last clicked button
     elif not button_clicked and st.session_state["points"]:
         st.session_state['last_clicked_button'] = None
+
 
 def generate_progress_bar(label, count, gradient):
     display_count = count/(data['Count'].max()+1)*100+10
@@ -177,6 +172,7 @@ def generate_progress_bar(label, count, gradient):
     </div>
     """, unsafe_allow_html=True)
 
+
 def clear_column(csv_path, column_name):
     # Load CSV into a DataFrame
     df = pd.read_csv(csv_path)
@@ -186,7 +182,6 @@ def clear_column(csv_path, column_name):
 
     # Save the modified DataFrame back to the CSV file
     df.to_csv(csv_path, index=False)
-
 
 
 image_folder = "testapp/image/"
@@ -284,8 +279,6 @@ agg_count = data.loc[data['Label'] == 'AGG', 'Count'].iloc[0]
 oof_count = data.loc[data['Label'] == 'OOF', 'Count'].iloc[0]
 
 
-
-
 generate_progress_bar(
     "WBC", wbc_count, "linear-gradient(to right, #d4fc79 0%, #96e6a1 100%)")  # Dusty Grass
 generate_progress_bar(
@@ -301,14 +294,9 @@ generate_progress_bar(
 ###############################################################
 
 
-
-
-
 add_vertical_space(2)
 
 # Create three columns
 col1, col2, col3 = st.columns([2, 2, 1])
 if col2.button("🤙🏻 Summit"):
     switch_page("Classification")
-
-

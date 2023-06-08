@@ -27,11 +27,16 @@ classifier = option_menu('Classification Model', ['KNN', 'SVC', 'Random Forest',
         "list-style-type": "none",
         "margin": "0"
     },
+    "menu-title":{
+        "color": "#333333",
+        "font-weight": "bold"
+        
+    },
     "nav-link": {
         "font-size": "15px",
         "text-align": "center",
         # "margin":"30px",
-        # "--hover-color": "#007BFF",
+        "--hover-color": "#90c5ff",
         "color": "#333333",
         "font-weight": "100",
         "text-decoration": "none",
