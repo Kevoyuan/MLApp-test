@@ -197,7 +197,7 @@ semver==2.13.0
 sentry-sdk==1.25.0
 simplejson==3.19.1
 six==1.16.0
-sklearn==0.0.post5
+scikit-learn
 smmap==5.0.0
 soupsieve==2.4.1
 sqlparse==0.4.4
