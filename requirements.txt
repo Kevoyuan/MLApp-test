@@ -63,8 +63,7 @@ fonttools==4.39.4
 gast==0.4.0
 gitdb==4.0.10
 GitPython==3.1.31
-google-api-coreschema
-google-api-python-clien
+
 google-auth
 google-auth-httplib2
 google-auth-oauthlib
