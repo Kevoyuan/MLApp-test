@@ -247,7 +247,7 @@ if "points" not in st.session_state:
     st.session_state["points"] = []
 
 # with col1:
-value = streamlit_image_coordinates(image_path)
+value = streamlit_image_coordinates(image_path,width=650)
 
 
 if value is not None:
