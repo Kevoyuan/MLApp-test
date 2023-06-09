@@ -2,6 +2,7 @@ from streamlit_toggle import st_toggle_switch
 import streamlit as st
 from streamlit_extras.add_vertical_space import add_vertical_space
 from streamlit_extras.switch_page_button import switch_page
+from streamlit_extras.no_default_selectbox import selectbox
 
 from streamlit_image_coordinates import streamlit_image_coordinates
 
@@ -17,8 +18,8 @@ st.set_page_config(
 
 # Read the CSV file
 csv_path = 'testapp/cell_input.csv'
-df = pd.read_csv(csv_path, delimiter=',')
-
+df_original = pd.read_csv(csv_path, delimiter=',')
+df = df_original.copy()
 
 labels = {'WBC', 'RBC', 'AGG', 'PLT', 'OOF'}
 
@@ -33,6 +34,46 @@ for label in labels:
     label_lists[list_name] = coordinates
 
 # st.write(label_lists['list_top_left_coordinates_WBC'])
+def upload_image(image_path):
+    uploaded_file = st.sidebar.file_uploader("Choose an image file", type=["png", "jpg", "jpeg"])
+
+    if uploaded_file is not None:
+        # Convert the file to an image
+        image = Image.open(uploaded_file)
+
+        # Display the uploaded image
+        # st.image(image, caption='Uploaded Image', use_column_width=True)
+        # Save the image to the image folder
+        image_path = os.path.join(image_folder, uploaded_file.name)
+        image.save(image_path)
+
+
+        return image
+
+    return None
+
+def delete_file(file_path):
+    """Delete a file at the given path."""
+    if os.path.isfile(file_path):
+        os.remove(file_path)
+        st.success("File removed successfully.")
+    else:
+        st.error("File not found.")
+        
+def delete_image(image_folder):
+    """Allow users to delete an image from the image folder."""
+
+    # List all image files in the directory
+    image_files = [f for f in os.listdir(image_folder) if f.endswith((".png", ".jpg", ".jpeg"))]
+
+    # Let the user select an image to delete
+    selected_image = selectbox("Select an image to delete", image_files)
+
+    if selected_image is not None:
+        # Delete the selected image
+        image_path = os.path.join(image_folder, selected_image)
+        if st.sidebar.button('Delete Image'):
+            delete_file(image_path)
 
 
 def is_point_in_box(point, top_left_coordinates, box_size=96):
@@ -114,6 +155,8 @@ def generate_progress_bar(label, count, gradient):
         width: 40px; 
         margin-right: 10px;
         margin-bottom: -5px;
+        # display: flex;       
+        align-items: center;
 
         
         font-size: 18px;
@@ -183,12 +226,16 @@ def clear_column(csv_path, column_name):
     # Save the modified DataFrame back to the CSV file
     df.to_csv(csv_path, index=False)
 
+###############################################################
+
 
 image_folder = "testapp/image/"
+uploaded_image = upload_image(image_folder)
+
 image_files = [f for f in os.listdir(
     image_folder) if f.endswith((".png", ".jpg", ".jpeg"))]
 
-col1, col2 = st.columns([5, 1])
+# col1, col2 = st.columns([5, 1])
 
 # Create a select list with image file options
 selected_image = st.sidebar.selectbox("Select an image", image_files)
@@ -200,7 +247,7 @@ if "points" not in st.session_state:
     st.session_state["points"] = []
 
 # with col1:
-value = streamlit_image_coordinates(image_path, width=650)
+value = streamlit_image_coordinates(image_path)
 
 
 if value is not None:
@@ -237,30 +284,31 @@ complete_label_counts = complete_label_counts.add(label_counts, fill_value=0)
 
 # st.write(complete_label_counts)
 
+with st.sidebar:
+    on = st_toggle_switch(
+        label="Advance Setting",
+        key="switch_1",
+        default_value=False,
+        label_after=True,
+        inactive_color="#D3D3D3",
+        active_color="#11567f",
+        track_color="#29B5E8",
 
-on = st_toggle_switch(
-    label="Advance Setting",
-    key="switch_1",
-    default_value=False,
-    label_after=True,
-    inactive_color="#D3D3D3",
-    active_color="#11567f",
-    track_color="#29B5E8",
+    )
+    if on:
+        # Create a Streamlit button
+        toggle_button = st.sidebar.checkbox("Clear labels")
+        
+        if toggle_button:
+            st.sidebar.warning("Warning: This process will clear the labels you have marked!")
+            button_clicked = st.sidebar.button("Confirm")
+            
 
-)
-if on:
-
-    # Create a Streamlit button
-
-    toggle_button = st.checkbox("Clear labels")
-    if toggle_button:
-        st.warning("Warning: This process will clear the labels you have marked!")
-        button_clicked = st.button("Confirm")
-
-    # Check if the button is clicked
-        if button_clicked:
-            clear_column(csv_path, 'label')
-            st.success(f"The cell label has been cleared.")
+            # Check if the button is clicked
+            if button_clicked:
+                clear_column(csv_path, 'label')
+                st.sidebar.success("The cell label has been cleared.")
+        delete_image(image_folder)
 
 
 ###########################################################################
@@ -297,6 +345,6 @@ generate_progress_bar(
 add_vertical_space(2)
 
 # Create three columns
-col1, col2, col3 = st.columns([2, 2, 1])
-if col2.button("🤙🏻 Summit"):
+# col1, col2, col3 = st.columns([2, 2, 1])
+if st.sidebar.button("🤙🏻 Summit"):
     switch_page("Classification")
