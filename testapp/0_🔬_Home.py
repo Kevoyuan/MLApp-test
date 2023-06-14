@@ -21,6 +21,8 @@ csv_path = 'testapp/cell_input.csv'
 df_original = pd.read_csv(csv_path, delimiter=',')
 df = df_original.copy()
 
+# df['label'] = ''
+
 labels = {'WBC', 'RBC', 'AGG', 'PLT', 'OOF'}
 
 # Create separate lists for each label
@@ -247,7 +249,7 @@ if "points" not in st.session_state:
     st.session_state["points"] = []
 
 # with col1:
-value = streamlit_image_coordinates(image_path,width=650)
+value = streamlit_image_coordinates(image_path, width=650)
 
 
 if value is not None:
