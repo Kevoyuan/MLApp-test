@@ -26,9 +26,6 @@ def upload_image(image_path):
     if uploaded_file is not None:
         # Convert the file to an image
         image = Image.open(uploaded_file)
-
-        # Display the uploaded image
-        # st.image(image, caption='Uploaded Image', use_column_width=True)
         # Save the image to the image folder
         image_path = os.path.join(image_folder, uploaded_file.name)
         image.save(image_path)
@@ -91,15 +88,14 @@ def change_label(mask, new_label, df, csv_path):
             mask_index = i
             break
 
-    if mask_index is not None:
-        # Update the 'label' column for the corresponding row
-        df.at[mask_index, 'label'] = new_label
+    # Update the 'label' column for the corresponding row
+    df.at[mask_index, 'label'] = new_label
 
-        # Save the DataFrame back to the CSV file
-        df.to_csv(csv_path, index=False)
+    # Save the DataFrame back to the CSV file
+    df.to_csv(csv_path, index=False)
 
 
-def styled_button(col, text, label, df,csv_path):
+def styled_button(col, text, label, df, csv_path):
     """Create a styled button. When the button is clicked, change the label of the highlighted cell to the button's label."""
     # If the current button label matches the last clicked button label, turn it green
     if st.session_state.get("last_clicked_button") == label:
@@ -110,7 +106,7 @@ def styled_button(col, text, label, df,csv_path):
         for mask_label, masks in label_lists.items():
             for mask in masks:
                 if is_point_in_mask(st.session_state["points"][-1], mask) and mask_label == f'list_masks_{label}':
-                    button_color = '💘'  # green
+                    button_color = '🐤'  # green
                     break
     else:
         button_color = '🤍'  # white
@@ -122,7 +118,8 @@ def styled_button(col, text, label, df,csv_path):
     if button_clicked and st.session_state["selected_mask"] is not None:
         st.session_state['last_clicked_button'] = label
         # Pass the label as a string
-        change_label(st.session_state["selected_mask"], str(label), df,csv_path)
+        change_label(st.session_state["selected_mask"], str(
+            label), df, csv_path)
         # Reset the selected mask
         st.session_state["selected_mask"] = None
         st.experimental_rerun()
@@ -209,6 +206,54 @@ def generate_progress_bar(label, count, gradient):
     """, unsafe_allow_html=True)
 
 
+def generate_count_bar(label, count, total, gradient):
+    display_count = count / total * 100
+
+    css = f"""
+    <style>
+    .vertical-bar-container {{
+        height: 300px;
+        width: 30px;
+        display: flex;
+        flex-direction: column-reverse;
+        align-items: center;
+        background-color: #f2f2f2;
+        border-radius: 10px;
+        padding: 5px;
+        margin-right: 10px;
+    }}
+
+    .vertical-bar {{
+        background-image: {gradient};
+        width: 100%;
+        border-radius: 10px;
+        transition: height 1s ease-in-out;
+    }}
+
+    .percentage {{
+        margin-top: 5px;
+        font-size: 14px;
+        font-weight: bold;
+    }}
+
+    .label {{
+        font-size: 12px;
+        color: #555;
+    }}
+    </style>
+    """
+
+    st.markdown(css, unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div class="vertical-bar-container">
+        <div class="vertical-bar" style="height: {display_count}%;"></div>
+    </div>
+    <div class="percentage">{display_count:.1f}%</div>
+    <div class="label">{label}</div>
+    """, unsafe_allow_html=True)
+
+
 def clear_column(csv_path, column_name):
     # Load CSV into a DataFrame
     df = pd.read_csv(csv_path)
@@ -234,9 +279,6 @@ def load_data(mask_name):
 
     df = pd.DataFrame(data)
     return df, data
-
-
-
 
 
 ########################################################
@@ -284,8 +326,12 @@ if "points" not in st.session_state:
 if "selected_mask" not in st.session_state:
     st.session_state["selected_mask"] = None
 
-# with col1:
-value = streamlit_image_coordinates(image_path)
+
+col1, col2 = st.columns([5, 1])
+
+with col1:
+    value = streamlit_image_coordinates(image_path)
+
 
 # Extract the name of the image file without the extension
 image_name = os.path.splitext(selected_image)[0]
@@ -296,19 +342,12 @@ csv_path = f'testapp/{image_name}.csv'
 mask_name = f'testapp/{image_name}.pkl'
 
 
-
 if 'df' not in st.session_state:
-    
-    
     st.session_state.df, data = load_data(mask_name)
 
 df = st.session_state.df
-# mask = df['masks'][0]
 
-#########################
-
-
-if 'label' not in df.columns:
+if 'label' not in df.columns and not df.empty:
     df['label'] = ''
 
 
@@ -321,7 +360,6 @@ if len(unique_labels) > 0:  # Only proceed if there are any labels
         masks = df.loc[df['label'] == label, 'masks'].tolist()
         list_name = f"list_masks_{label}"
         label_lists[list_name] = masks
-import os
 
 # Check if the csv file exists
 if not os.path.isfile(csv_path):
@@ -334,12 +372,9 @@ else:
     mask_label = pd.read_csv(csv_path)
 
 
-
-
-
 if value is not None:
     point = value["x"], value["y"]
-    st.write("(x, y): ",point)
+    st.write("(x, y): ", point)
 
     # Find the mask that contains the clicked point
     selected_mask = None
@@ -355,6 +390,20 @@ if value is not None:
         st.session_state["points"].append(point)
         st.experimental_rerun()
 
+############################################################################
+
+unlabeled_count = mask_label['label'].isna().sum()  # count of unlabeled masks
+labeled_count = mask_label['label'].value_counts().sum()
+
+# st.write(labeled_count)
+total_count = len(mask_label)  # total count of masks
+# example gradient
+gradient = "linear-gradient(to right, #d4fc79 0%, #96e6a1 100%)"
+with col2:
+    # add_vertical_space(5)
+
+    generate_count_bar("labeled", labeled_count, total_count, gradient)
+
 
 # st.write(is_point_in_mask(point, masks[0]))
 
@@ -363,11 +412,11 @@ if value is not None:
 col1, col2, col3, col4, col5 = st.columns(5)
 
 
-styled_button(col1, "WBC", "WBC", df,csv_path)
-styled_button(col2, "RBC", "RBC", df,csv_path)
-styled_button(col3, 'PLT', 'PLT', df,csv_path)
-styled_button(col4, "AGG", "AGG", df,csv_path)
-styled_button(col5, "OOF", "OOF", df,csv_path)
+styled_button(col1, "WBC", "WBC", df, csv_path)
+styled_button(col2, "RBC", "RBC", df, csv_path)
+styled_button(col3, 'PLT', 'PLT', df, csv_path)
+styled_button(col4, "AGG", "AGG", df, csv_path)
+styled_button(col5, "OOF", "OOF", df, csv_path)
 
 mask_label = pd.read_csv(csv_path)
 
