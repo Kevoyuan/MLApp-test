@@ -206,8 +206,8 @@ def generate_time_progress_bar(label, total_time, gradient):
         time.sleep(1)
         
         
-generate_time_progress_bar(
-    label='Progress', 
-    total_time=100, 
-    gradient="linear-gradient(to right, #ff0000, #ffff00)"
-)
+# generate_time_progress_bar(
+#     label='Progress', 
+#     total_time=100, 
+#     gradient="linear-gradient(to right, #ff0000, #ffff00)"
+# )
