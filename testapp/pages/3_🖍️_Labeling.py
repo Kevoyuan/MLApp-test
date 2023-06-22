@@ -18,23 +18,6 @@ st.set_page_config(
     # layout="wide"
 )
 
-
-# def upload_image(image_path):
-#     uploaded_file = st.sidebar.file_uploader(
-#         "Choose an image file", type=["png", "jpg", "jpeg"])
-
-#     if uploaded_file is not None:
-#         # Convert the file to an image
-#         image = Image.open(uploaded_file)
-#         # Save the image to the image folder
-#         image_path = os.path.join(image_folder, uploaded_file.name)
-#         image.save(image_path)
-
-#         return image
-
-#     return None
-
-
 def delete_file(file_path):
     """Delete a file at the given path."""
     if os.path.isfile(file_path):
@@ -76,7 +59,7 @@ def draw_mask_if_point_in_mask(img, point, mask):
     if is_point_in_mask(point, mask):
         mask_indices = np.where(mask == 1)
         img[mask_indices] = [255, 0, 0]  # change masked pixels to red
-        
+
     return img
 
 
@@ -213,7 +196,6 @@ def generate_count_bar(label, count, total, gradient):
     else:
         display_count = 0  # or whatever value you want to assign when total is zero
 
-
     css = f"""
     <style>
     .vertical-bar-container {{
@@ -258,6 +240,7 @@ def generate_count_bar(label, count, total, gradient):
     <div class="label">{label}</div>
     """, unsafe_allow_html=True)
 
+
 def merge_csv(directory):
     # Use os.listdir to get all files in the directory
     all_files = os.listdir(directory)
@@ -278,22 +261,24 @@ def merge_csv(directory):
     merged_df = pd.concat(df_list)
 
     # Save the merged dataframe to a new csv file
-    merged_df.to_csv('testapp/labeled_mask/merged.csv', index=False)
-    
-    
-    
-def clear_column(csv_path, column_name):
+    merged_df.to_csv('app/labeled_mask/merged.csv', index=False)
+
+
+def clear_column(csv_path, column_name, mask_name):
     # Load CSV into a DataFrame
     df = pd.read_csv(csv_path)
 
     # Clear the values in the specified column
-    df[column_name] = ""
+    df[column_name] = None
 
     # Save the modified DataFrame back to the CSV file
     df.to_csv(csv_path, index=False)
 
-###############################################################
+    # df = pd.DataFrame(columns=['masks', 'label'])
 
+    st.session_state['df'], data = load_data(mask_name)
+
+###############################################################
 
 def load_data(mask_name):
     # Read the pickle file and create the DataFrame
@@ -310,23 +295,21 @@ def load_data(mask_name):
 
 
 ########################################################
-image_folder = "testapp/image/"
+image_folder = "app/image/"
 # uploaded_image = upload_image(image_folder)
 
 image_files = [f for f in os.listdir(
     image_folder) if f.endswith((".png", ".jpg", ".jpeg"))]
 
-# col1, col2 = st.columns([5, 1])
-
-# Create a select list with image file options
 
 with st.sidebar:
+    # Create a select list with image file options
     selected_image = st.selectbox("Select an image", image_files)
-    image_name = os.path.splitext(selected_image)[0]    
-    
-    csv_path = f'testapp/labeled_mask/{image_name}.csv'
+    image_name = os.path.splitext(selected_image)[0]
+
+    csv_path = f'app/labeled_mask/{image_name}.csv'
     # st.write(csv_path)
-    mask_name = f'testapp/{image_name}.pkl'
+    mask_name = f'app/{image_name}.pkl'
     on = st_toggle_switch(
         label="Advance Setting",
         key="switch_1",
@@ -348,7 +331,10 @@ with st.sidebar:
 
             # Check if the button is clicked
             if button_clicked:
-                clear_column(csv_path, 'label')
+                clear_column(csv_path, 'label', mask_name)
+
+                # st.session_state['df']=pd.DataFrame(columns=['masks', 'label'])
+
                 st.success("The cell label has been cleared.")
         delete_image(image_folder)
 # Construct the full path to the selected image
@@ -366,19 +352,10 @@ with col1:
     value = streamlit_image_coordinates(image_path)
 
 
-# Extract the name of the image file without the extension
-# image_name = os.path.splitext(selected_image)[0]
-
-# Use the image name as the name of the CSV file
-# csv_path = f'testapp/labeled_mask/{image_name}.csv'
-
-# mask_name = f'testapp/{image_name}.pkl'
-
-
 if 'df' not in st.session_state:
-    st.session_state.df, data = load_data(mask_name)
+    st.session_state['df'], data = load_data(mask_name)
 
-df = st.session_state.df
+df = st.session_state['df']
 
 if 'label' not in df.columns and not df.empty:
     df['label'] = ''
@@ -409,28 +386,19 @@ else:
 if value is not None:
     point = value["x"], value["y"]
 
+    st.session_state["points"].append(point)
 
-    # Find the mask that contains the clicked point
-    selected_mask = None
-    for mask in df['masks']:
-        if is_point_in_mask(point, mask):
-            selected_mask = mask
-            break
+    for label, masks in label_lists.items():
+        for mask in masks:
+            if is_point_in_mask(point, mask):
+                st.session_state["selected_mask"] = mask
+                st.session_state['df'] = df
+                break
 
-    # Set the selected mask
-    st.session_state["selected_mask"] = selected_mask
-
-    if point not in st.session_state["points"]:
-        st.session_state["points"].append(point)
-        st.experimental_rerun()
-        
-with st.sidebar: 
+with st.sidebar:
     if on:
 
         st.write("cursor: ", point)
-
-        
-               
 
 
 ############################################################################
@@ -452,7 +420,7 @@ with col2:
 
 
 # # Create buttons for each cell
-col1, col2, col3, col4, col5, col6,col7 = st.columns(7)
+col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
 
 
 styled_button(col1, "WBC", "WBC", df, csv_path)
@@ -478,33 +446,30 @@ complete_label_counts = complete_label_counts.add(label_counts, fill_value=0)
 data = complete_label_counts.reset_index()
 data.columns = ['Label', 'Count']
 
-
 wbc_count = data.loc[data['Label'] == 'WBC', 'Count'].iloc[0]
 rbc_count = data.loc[data['Label'] == 'RBC', 'Count'].iloc[0]
 plt_count = data.loc[data['Label'] == 'PLT', 'Count'].iloc[0]
 agg_count = data.loc[data['Label'] == 'AGG', 'Count'].iloc[0]
 oof_count = data.loc[data['Label'] == 'OOF', 'Count'].iloc[0]
 
-
 generate_progress_bar(
     "WBC", wbc_count, "linear-gradient(to right, #d4fc79 0%, #96e6a1 100%)")
 generate_progress_bar(
-    'RBC', rbc_count, "linear-gradient(to right, #FAE8E0, #EF7C8E)") 
+    'RBC', rbc_count, "linear-gradient(to right, #FAE8E0, #EF7C8E)")
 generate_progress_bar(
     'PLT', plt_count, "linear-gradient(to right, #D4BBDD, #5E376D)")
 generate_progress_bar(
-    'AGG', agg_count, "linear-gradient(to right, #BBE7FE, #3F92B7)")  
+    'AGG', agg_count, "linear-gradient(to right, #BBE7FE, #3F92B7)")
 generate_progress_bar(
-    'OOF', oof_count, "linear-gradient(to right, #fffbd5, #b20a2c)") 
+    'OOF', oof_count, "linear-gradient(to right, #fffbd5, #b20a2c)")
 
 
 ###############################################################
-
 
 add_vertical_space(2)
 
 # Create three columns
 # col1, col2, col3 = st.columns([2, 2, 1])
 if st.sidebar.button("🤙🏻 Summit"):
-    merge_csv('testapp/labeled_mask')
+    merge_csv('app/labeled_mask')
     switch_page("Classification")
