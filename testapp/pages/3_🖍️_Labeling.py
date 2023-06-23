@@ -18,6 +18,7 @@ st.set_page_config(
     # layout="wide"
 )
 
+
 def delete_file(file_path):
     """Delete a file at the given path."""
     if os.path.isfile(file_path):
@@ -278,7 +279,33 @@ def clear_column(csv_path, column_name, mask_name):
 
     st.session_state['df'], data = load_data(mask_name)
 
+
+def apply_colored_masks(image_path, masks, labels, color_dict):
+    with Image.open(image_path) as img:
+        img = img.convert('RGB')
+        for idx, mask in enumerate(masks):
+            # Check if the label for the current mask is not NaN
+            if not pd.isna(labels[idx]):
+                # Convert mask to PIL Image and ensure it's 'L' mode
+                mask_img = Image.fromarray(
+                    np.array(mask).astype('uint8') * 255).convert('L')
+
+                # Get the label for the current mask
+                label = labels[idx]
+
+                # Get the color for the current label
+                # Default to white if label not in color_dict
+                color = color_dict.get(label, (255, 255, 255))
+
+                # Create overlay image
+                overlay = Image.new('RGB', img.size, color)
+
+                # Paste the overlay onto the image using the mask
+                img.paste(overlay, mask=mask_img)
+
+        return img
 ###############################################################
+
 
 def load_data(mask_name):
     # Read the pickle file and create the DataFrame
@@ -308,7 +335,6 @@ with st.sidebar:
     image_name = os.path.splitext(selected_image)[0]
 
     csv_path = f'app/labeled_mask/{image_name}.csv'
-    # st.write(csv_path)
     mask_name = f'app/{image_name}.pkl'
     on = st_toggle_switch(
         label="Advance Setting",
@@ -346,12 +372,6 @@ if "selected_mask" not in st.session_state:
     st.session_state["selected_mask"] = None
 
 
-col1, col2 = st.columns([5, 1])
-
-with col1:
-    value = streamlit_image_coordinates(image_path)
-
-
 if 'df' not in st.session_state:
     st.session_state['df'], data = load_data(mask_name)
 
@@ -374,22 +394,44 @@ if len(unique_labels) > 0:  # Only proceed if there are any labels
 # Check if the csv file exists
 if not os.path.isfile(csv_path):
     # If the file doesn't exist, create a new DataFrame with the appropriate columns
-    mask_label = pd.DataFrame(columns=['masks', 'label'])
+    mask_label_frame = pd.DataFrame(columns=['masks', 'label'])
     # Save the DataFrame as a CSV file
-    mask_label.to_csv(csv_path, index=False)
+    mask_label_frame.to_csv(csv_path, index=False)
 else:
     # If the file exists, read it
-    mask_label = pd.read_csv(csv_path)
+    mask_label_frame = pd.read_csv(csv_path)
 
+# Define a dictionary that maps labels to colors
+color_dict = {
+    'WBC': (52, 199, 89),   # Mint Green
+    'RBC': (255, 69, 58),   # Red
+    'AGG': (0, 122, 255),   # Blue
+    'PLT': (255, 149, 0),   # Orange
+    'OOF': (175, 82, 222),  # Purple
+}
+
+mask_labels = mask_label_frame['label']
+masks_to_color = df['masks']
+
+col1, col2 = st.columns([5, 1])
+
+with col1:
+    img = apply_colored_masks(
+        image_path, masks_to_color, mask_labels, color_dict)
+    value = streamlit_image_coordinates(img)
 ############################################################################
 
+# initial point coordinate
+point = 0, 0
 if value is not None:
+
     point = value["x"], value["y"]
 
     st.session_state["points"].append(point)
 
     for label, masks in label_lists.items():
         for mask in masks:
+
             if is_point_in_mask(point, mask):
                 st.session_state["selected_mask"] = mask
                 st.session_state['df'] = df
@@ -403,11 +445,12 @@ with st.sidebar:
 
 ############################################################################
 
-unlabeled_count = mask_label['label'].isna().sum()  # count of unlabeled masks
-labeled_count = mask_label['label'].value_counts().sum()
+# count of unlabeled masks
+unlabeled_count = mask_label_frame['label'].isna().sum()
+labeled_count = mask_label_frame['label'].value_counts().sum()
 
 # st.write(labeled_count)
-total_count = len(mask_label)  # total count of masks
+total_count = len(mask_label_frame)  # total count of masks
 # example gradient
 gradient = "linear-gradient(#94FAF0 , #31D1D0)"
 with col2:
