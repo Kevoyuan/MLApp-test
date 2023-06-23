@@ -173,8 +173,11 @@ classifiers = {
 
 selected_classifier = classifiers[classifier]
 
-# if selected_classifier:
-#     st.write(selected_classifier)
+# dict
+selected_classifier_dict = vars(selected_classifier)
+
+
+st.write(selected_classifier_dict)
 
 
 # if col1.button("🙈 Preview"):
