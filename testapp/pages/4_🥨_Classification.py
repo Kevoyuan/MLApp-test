@@ -1,5 +1,6 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
+from streamlit_toggle import st_toggle_switch
 
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
@@ -177,13 +178,26 @@ selected_classifier = classifiers[classifier]
 selected_classifier_dict = vars(selected_classifier)
 
 
-st.write(selected_classifier_dict)
+with st.sidebar:
+    on = st_toggle_switch(
+        label="Hyperparameters Preview",
+        key="switch_1",
+        default_value=False,
+        label_after=True,
+        inactive_color="#D3D3D3",
+        active_color="#11567f",
+        track_color="#29B5E8",
+
+    )
+    if on:
+
+        st.write(selected_classifier_dict)
 
 
 # if col1.button("🙈 Preview"):
-st.write('Preview of the classifier:')
+# st.write('Preview of the classifier:')
 
-st.write(selected_classifier)
+# st.write(selected_classifier)
 # Add your training code/ function here!
 add_vertical_space(3)
 col1, col2, col3 = st.columns([2, 2, 1])
