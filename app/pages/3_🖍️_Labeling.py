@@ -118,6 +118,16 @@ def generate_progress_bar(label, count, gradient):
     display_count = count/(data['Count'].max()+1)*100+10
     css = f"""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+    body {{
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+        sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }}
+
     .flex-container {{
         display: flex;
         align-items: center;
@@ -129,21 +139,20 @@ def generate_progress_bar(label, count, gradient):
     .title {{
         width: 40px; 
         margin-right: 10px;
-        margin-bottom: -5px;
+        margin: -5px;
         # display: flex;       
         align-items: center;
-
-        
-        font-size: 18px;
+        font-size: 16px;
         # font-weight: bold;
         text-align: left; 
+        color: #333; 
     }}
 
     .container {{
-        background-color: rgb(192, 192, 192);
+        background-color: #e3e7eb;
         width: 80%;  
         # flex-grow: 1;
-        height: 20px; 
+        height: 18px; 
         border-radius: 20px;
         margin-bottom: 0px
     }}
@@ -151,7 +160,7 @@ def generate_progress_bar(label, count, gradient):
     .text-{label} {{
         background-image: {gradient};
         color: white;
-        padding: 0.5%;
+        padding: 0.1%;
         text-align: right;
         font-size: 22px;
         font-weight: bold; 
@@ -199,6 +208,12 @@ def generate_count_bar(label, count, total, gradient):
 
     css = f"""
     <style>
+    @font-face {{
+        font-family: "San Francisco";
+        font-weight: 400;
+        src: url("https://applesocial.s3.amazonaws.com/assets/styles/fonts/sanfrancisco/sanfranciscodisplay-regular-webfont.woff");
+    }}
+
     .vertical-bar-container {{
         height: 300px;
         width: 30px;
@@ -222,11 +237,13 @@ def generate_count_bar(label, count, total, gradient):
         margin-top: 5px;
         font-size: 14px;
         font-weight: bold;
+        font-family: "San Francisco", -apple-system, BlinkMacSystemFont, sans-serif;
     }}
 
     .label {{
         font-size: 12px;
         color: #555;
+        font-family: "San Francisco", -apple-system, BlinkMacSystemFont, sans-serif;
     }}
     </style>
     """
@@ -281,6 +298,7 @@ def clear_column(csv_path, column_name, mask_name):
 
 
 def apply_colored_masks(image_path, masks, labels, color_dict):
+
     with Image.open(image_path) as img:
         img = img.convert('RGB')
         for idx, mask in enumerate(masks):
@@ -385,7 +403,7 @@ labels = {'WBC', 'RBC', 'AGG', 'PLT', 'OOF'}
 label_lists = {}
 
 unique_labels = df['label'].unique()  # This will ignore NaN values
-if len(unique_labels) > 0:  # Only proceed if there are any labels
+if len(unique_labels) > 0:
     for label in unique_labels:
         masks = df.loc[df['label'] == label, 'masks'].tolist()
         list_name = f"list_masks_{label}"
@@ -403,12 +421,13 @@ else:
 
 # Define a dictionary that maps labels to colors
 color_dict = {
-    'WBC': (52, 199, 89),   # Mint Green
-    'RBC': (255, 69, 58),   # Red
-    'AGG': (0, 122, 255),   # Blue
-    'PLT': (255, 149, 0),   # Orange
-    'OOF': (175, 82, 222),  # Purple
+    'WBC': (89, 75, 110),  # White
+    'RBC': (255, 0, 0),      # Red
+    'AGG': (0, 0, 255),      # Blue
+    'PLT': (255, 140, 0),    # Orange
+    'OOF': (128, 0, 128)     # Purple
 }
+
 
 mask_labels = mask_label_frame['label']
 masks_to_color = df['masks']
@@ -452,9 +471,9 @@ labeled_count = mask_label_frame['label'].value_counts().sum()
 # st.write(labeled_count)
 total_count = len(mask_label_frame)  # total count of masks
 # example gradient
-gradient = "linear-gradient(#94FAF0 , #31D1D0)"
 with col2:
     # add_vertical_space(5)
+    gradient = "linear-gradient(#94FAF0 , #31D1D0)"
 
     generate_count_bar("labeled", labeled_count, total_count, gradient)
 
@@ -496,15 +515,15 @@ agg_count = data.loc[data['Label'] == 'AGG', 'Count'].iloc[0]
 oof_count = data.loc[data['Label'] == 'OOF', 'Count'].iloc[0]
 
 generate_progress_bar(
-    "WBC", wbc_count, "linear-gradient(to right, #d4fc79 0%, #96e6a1 100%)")
+    "WBC", wbc_count, "linear-gradient(to right, #a0a5b9 0%, #cfd9df 100%)")
 generate_progress_bar(
-    'RBC', rbc_count, "linear-gradient(to right, #FAE8E0, #EF7C8E)")
+    'RBC', rbc_count, "linear-gradient(to right, #e3e7eb, #cfd9df)")
 generate_progress_bar(
-    'PLT', plt_count, "linear-gradient(to right, #D4BBDD, #5E376D)")
+    'PLT', plt_count, "linear-gradient(to right, #cfd9df, #a0a5b9)")
 generate_progress_bar(
-    'AGG', agg_count, "linear-gradient(to right, #BBE7FE, #3F92B7)")
+    'AGG', agg_count, "linear-gradient(to right, #a0a5b9, #e3e7eb)")
 generate_progress_bar(
-    'OOF', oof_count, "linear-gradient(to right, #fffbd5, #b20a2c)")
+    'OOF', oof_count, "linear-gradient(to right, #cfd9df, #a0a5b9)")
 
 
 ###############################################################
