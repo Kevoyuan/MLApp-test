@@ -5,12 +5,27 @@ from streamlit_extras.add_vertical_space import add_vertical_space
 from PIL import Image
 import os
 from streamlit_extras.switch_page_button import switch_page
+from detection import get_image_masks, generate_head2head_comparison
+
+st.set_page_config(
+    page_title="AMI05",
+    page_icon="🎯",
+    # layout="wide"
+)
+
+# parameters_segmentation_stack = {
+#     'CHECKPOINT_PATH': os.path.join("app", "sam_weights", "sam_vit_b_01ec64.pth"),
+#     'MODEL_TYPE': "vit_b",
+#     'DEVICE': torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+# }
 
 def upload_images(image_folder):
     uploaded_files = st.sidebar.file_uploader(
         "Choose image files", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
 
     images = []
+    image_paths = []  # This will hold the paths of the saved images
+
     if uploaded_files:
         for uploaded_file in uploaded_files:
             # Convert the file to an image
@@ -20,9 +35,12 @@ def upload_images(image_folder):
             image.save(image_path)
             images.append(image)
 
-        return images
-    
-    
+            # Append the path of the saved image to the list
+            image_paths.append(image_path)
+
+        return images, image_paths
+
+
 def generate_progress_bar(count, total_count, gradient):
     display_count = count / total_count * 100
     css = f"""
@@ -125,62 +143,105 @@ def generate_cork_board(fun_info):
     return css + cork_board
 
 
-@st.cache_data()
-def lottie_local(filepath: str):
-    with open(filepath, "r") as f:
-        return json.load(f)
+# def get_image_masks(image_name, save_as_pkl=False, return_elapsed_time=False, return_annotated=False ,para=parameters_segmentation_stack):
+#     """
+#     returns masks of given image
+#     :param image_name: name of the iamge
+#     :param save_as_pkl: a flag
+#     :param model: default to sam
+#     :return: masks, original or as pickled file
+#     """
+#     st = time.time()
+#     sam = sam_model_registry[para['MODEL_TYPE']](checkpoint=para['CHECKPOINT_PATH']).to(device=para['DEVICE'])
+#     mask_generator = SamAutomaticMaskGenerator(sam)
+#     image_bgr = cv2.imread(image_name)
+#     image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+#     sam_result = mask_generator.generate(image_rgb)
+#     masks = [mask['segmentation'] for mask in sorted(sam_result, key=lambda x: x['area'], reverse=True)][1:]
+#     mask_annotator = sv.MaskAnnotator()
+#     detections = sv.Detections.from_sam(sam_result=sam_result)
+#     annotated_image = mask_annotator.annotate(scene=image_bgr.copy(), detections=detections)
+#     if save_as_pkl:
+#         with open(image_name.removesuffix('.png') + '.pkl', 'wb') as save_segment:
+#             pickle.dump(masks, save_segment)
+#     et = time.time()
+#     duration = et-st
+#     print(f'{duration}s')
+#     if return_elapsed_time:
+#         if return_annotated:
+#             return masks, duration, annotated_image
+#         else:
+#             return masks, duration
+#     else:
+#         if return_annotated:
+#             return masks, annotated_image
 
 ##########################################################
 
 
-image_folder = "app/image/"
-uploaded_image = upload_images(image_folder)
-# lottie_url = 'app/cell_animate2.json'
-true_time =5
+image_folder = "image/"
+uploaded_image, image_paths = upload_images(image_folder)
+# st.write(image_paths)
+# st.write(len(image_paths))
 
 
+if not uploaded_image or not image_paths:
+    st.warning("No images uploaded")
+else:
+    pass
 
+comparison=[]
 if uploaded_image:
+
     if st.sidebar.button("🧀 Segmentaiton"):
         fun_info = randfacts.get_fact()
         st.markdown(generate_cork_board(fun_info), unsafe_allow_html=True)
         add_vertical_space(2)
+        with st.spinner('Wait for it...'):
+            masks = []
+            durations = []
+            annotated_images = []
+            
 
-        # st.write("Do you know: "+ fun_info)
+            # macOS style gradient
+            gradient = "linear-gradient(to right, #4cd964, #5ac8fa, #007aff, #34aadc, #5856d6, #ff2d55)"
 
-        total_time = 100
-        # macOS style gradient
-        gradient = "linear-gradient(to right, #4cd964, #5ac8fa, #007aff, #34aadc, #5856d6, #ff2d55)"
-        
-        # Create a placeholder for the progress bar
-        progress_placeholder = st.empty()
-        for time_elapsed in range(total_time + 1):
-            # Update the progress bar in the placeholder
-            progress_placeholder.markdown(
-                generate_progress_bar(time_elapsed, total_time, gradient),
-                unsafe_allow_html=True
-            )
+            # Create a placeholder for the progress bar
+            progress_placeholder = st.empty()
 
-            # Sleep for a short time for the first 95%, and a longer time for the last 5%
-            if time_elapsed < total_time * 0.95:
-                time.sleep(true_time * 0.1/95)  # 1 second for the first 95%
-            elif time_elapsed < total_time * 0.97:
-                time.sleep(true_time * 0.1/1)  # 1 second for the first 98%
-            else:
-                time.sleep(true_time * 0.8/3)  # 9 seconds for the last 5%
-        # Clear the content of the page
+            total_images = len(image_paths)
+            for i, image_path in enumerate(image_paths):
+                mask, duration, annotated = get_image_masks(
+                    image_path, save_as_pkl=True, return_elapsed_time=True, return_annotated=True)
+                comparison_image = generate_head2head_comparison(image_path, annotated)
+                
+                comparison.append(comparison_image)
+                masks.append(mask)
+                durations.append(duration)
+                annotated_images.append(annotated)
+
+                # Calculate the progress as a percentage
+                progress = (i + 1) / total_images * 100
+
+                # Update the progress bar
+                progress_placeholder.markdown(
+                    generate_progress_bar(progress, 100, gradient),
+                    unsafe_allow_html=True
+                )
+
+                # Sleep for a short time to allow the progress bar to update
+                time.sleep(0.1)
+
+            st.success('Done!', icon="✅")
+            time.sleep(1)
+            st.experimental_rerun()
         
-        # st.write(total_duration)
-        st.success('Done!', icon="✅")
-        time.sleep(1)
-        st.experimental_rerun()
-        
+        # st.image(comparison_image, caption='Comparison')
 
     # Divide the width equally among the number of images
 
-
     num_images = len(uploaded_image)
-    max_columns = 2
+    max_columns = 4
     num_rows = (num_images + max_columns - 1) // max_columns
 
     for i in range(num_rows):
@@ -189,7 +250,11 @@ if uploaded_image:
             image_index = i * max_columns + j
             if image_index < num_images:
                 columns[j].image(uploaded_image[image_index])
+                
+
+
+
 
 if st.sidebar.button("🤙🏻 Summit"):
- 
+
     switch_page("Labeling")

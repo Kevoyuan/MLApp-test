@@ -1,6 +1,7 @@
 import pickle
 import numpy as np
 from streamlit_toggle import st_toggle_switch
+
 import streamlit as st
 from streamlit_extras.add_vertical_space import add_vertical_space
 from streamlit_extras.switch_page_button import switch_page
@@ -279,7 +280,7 @@ def merge_csv(directory):
     merged_df = pd.concat(df_list)
 
     # Save the merged dataframe to a new csv file
-    merged_df.to_csv('app/labeled_mask/merged.csv', index=False)
+    merged_df.to_csv('labeled_mask/merged.csv', index=False)
 
 
 def clear_column(csv_path, column_name, mask_name):
@@ -298,12 +299,11 @@ def clear_column(csv_path, column_name, mask_name):
 
 
 def apply_colored_masks(image_path, masks, labels, color_dict):
-
     with Image.open(image_path) as img:
         img = img.convert('RGB')
         for idx, mask in enumerate(masks):
             # Check if the label for the current mask is not NaN
-            if not pd.isna(labels[idx]):
+            if len(labels) > idx and not pd.isna(labels[idx]):
                 # Convert mask to PIL Image and ensure it's 'L' mode
                 mask_img = Image.fromarray(
                     np.array(mask).astype('uint8') * 255).convert('L')
@@ -340,7 +340,7 @@ def load_data(mask_name):
 
 
 ########################################################
-image_folder = "app/image/"
+image_folder = "image/"
 # uploaded_image = upload_image(image_folder)
 
 image_files = [f for f in os.listdir(
@@ -352,8 +352,8 @@ with st.sidebar:
     selected_image = st.selectbox("Select an image", image_files)
     image_name = os.path.splitext(selected_image)[0]
 
-    csv_path = f'app/labeled_mask/{image_name}.csv'
-    mask_name = f'app/{image_name}.pkl'
+    csv_path = f'labeled_mask/{image_name}.csv'
+    mask_name = f'image/{image_name}.pkl'
     on = st_toggle_switch(
         label="Advance Setting",
         key="switch_1",
@@ -533,5 +533,5 @@ add_vertical_space(2)
 # Create three columns
 # col1, col2, col3 = st.columns([2, 2, 1])
 if st.sidebar.button("🤙🏻 Summit"):
-    merge_csv('app/labeled_mask')
+    merge_csv('labeled_mask')
     switch_page("Classification")
