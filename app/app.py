@@ -5,7 +5,7 @@ from streamlit_extras.add_vertical_space import add_vertical_space
 from PIL import Image
 import os
 from streamlit_extras.switch_page_button import switch_page
-from detection import get_image_masks, generate_head2head_comparison
+from detection import get_image_masks
 
 st.set_page_config(
     page_title="AMI05",
@@ -18,6 +18,7 @@ st.set_page_config(
 #     'MODEL_TYPE': "vit_b",
 #     'DEVICE': torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 # }
+
 
 def upload_images(image_folder):
     uploaded_files = st.sidebar.file_uploader(
@@ -38,68 +39,7 @@ def upload_images(image_folder):
             # Append the path of the saved image to the list
             image_paths.append(image_path)
 
-        return images, image_paths
-
-
-def generate_progress_bar(count, total_count, gradient):
-    display_count = count / total_count * 100
-    css = f"""
-    <style>
-    .flex-container {{
-        display: flex;
-        align-items: center;
-        margin-bottom: -5px;
-        justify-content: flex-start;
-        margin-top: 0px
-    }}
-
-    .container {{
-        background-color: rgb(192, 192, 192);
-        width: 600px;  
-        height: 20px; 
-        border-radius: 20px;
-        margin-bottom: 0px
-    }}
-
-    .text {{
-        background-image: {gradient};
-        color: white;
-        padding: 0.5%;
-        text-align: right;
-        font-size: 22px;
-        font-weight: bold; 
-        text-shadow: 2px 2px 8px #000000; 
-        border-radius: 22px;
-        height: 100%;
-        line-height: 15px;
-        width: {display_count}%;  
-        animation: progress-bar-width 1.5s ease-out 1;
-        transition: width 1.2s ease-out;
-        margin-top: 0px;
-        margin-bottom: 0px;
-    }}
-
-    .percent {{
-        width: {display_count}%;
-    }}
-
-    @keyframes progress-bar-width {{
-        0% {{ width: 0; }}
-        100% {{ width: {display_count}%; }}  
-    }}
-    </style>
-    """
-    progress_bar = f"""
-    <div class="flex-container">
-        <div class="container">
-            <div class="text percent">{int(display_count)}%</div> 
-        </div>
-    </div>
-    """
-    # Combine CSS and HTML
-    custom_progress_bar = css + progress_bar
-
-    return custom_progress_bar
+    return images, image_paths 
 
 
 def generate_cork_board(fun_info):
@@ -143,116 +83,91 @@ def generate_cork_board(fun_info):
     return css + cork_board
 
 
-# def get_image_masks(image_name, save_as_pkl=False, return_elapsed_time=False, return_annotated=False ,para=parameters_segmentation_stack):
-#     """
-#     returns masks of given image
-#     :param image_name: name of the iamge
-#     :param save_as_pkl: a flag
-#     :param model: default to sam
-#     :return: masks, original or as pickled file
-#     """
-#     st = time.time()
-#     sam = sam_model_registry[para['MODEL_TYPE']](checkpoint=para['CHECKPOINT_PATH']).to(device=para['DEVICE'])
-#     mask_generator = SamAutomaticMaskGenerator(sam)
-#     image_bgr = cv2.imread(image_name)
-#     image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
-#     sam_result = mask_generator.generate(image_rgb)
-#     masks = [mask['segmentation'] for mask in sorted(sam_result, key=lambda x: x['area'], reverse=True)][1:]
-#     mask_annotator = sv.MaskAnnotator()
-#     detections = sv.Detections.from_sam(sam_result=sam_result)
-#     annotated_image = mask_annotator.annotate(scene=image_bgr.copy(), detections=detections)
-#     if save_as_pkl:
-#         with open(image_name.removesuffix('.png') + '.pkl', 'wb') as save_segment:
-#             pickle.dump(masks, save_segment)
-#     et = time.time()
-#     duration = et-st
-#     print(f'{duration}s')
-#     if return_elapsed_time:
-#         if return_annotated:
-#             return masks, duration, annotated_image
-#         else:
-#             return masks, duration
-#     else:
-#         if return_annotated:
-#             return masks, annotated_image
-
 ##########################################################
 
 
 image_folder = "image/"
 uploaded_image, image_paths = upload_images(image_folder)
+
+
+SAVE_ROOT_PATH = "data"
 # st.write(image_paths)
 # st.write(len(image_paths))
 
 
 if not uploaded_image or not image_paths:
-    st.warning("No images uploaded")
+    st.warning("Please upload images")
 else:
     pass
+    # num_images = len(uploaded_image)
+    # max_columns = 4
+    # num_rows = (num_images + max_columns - 1) // max_columns
 
-comparison=[]
+    # for i in range(num_rows):
+    #     columns = st.columns(max_columns)
+    #     for j in range(max_columns):
+    #         image_index = i * max_columns + j
+    #         if image_index < num_images:
+    #             columns[j].image(uploaded_image[image_index])
+    #             columns[j].write(f"images{j}")
+                
 if uploaded_image:
-
+    # Divide the width equally among the number of images
+    st.write("preview of the images")
+    
+    columns = st.columns(4)  # Create 4 columns
+    for i, image_path in enumerate(image_paths):
+        image = Image.open(image_path)
+        with columns[i % 4]:  # Select the column by index
+            st.image(image, caption=os.path.basename(image_path), use_column_width=True)
     if st.sidebar.button("🧀 Segmentaiton"):
+        st.empty()
         fun_info = randfacts.get_fact()
         st.markdown(generate_cork_board(fun_info), unsafe_allow_html=True)
         add_vertical_space(2)
         with st.spinner('Wait for it...'):
-            masks = []
-            durations = []
-            annotated_images = []
-            
 
             # macOS style gradient
             gradient = "linear-gradient(to right, #4cd964, #5ac8fa, #007aff, #34aadc, #5856d6, #ff2d55)"
 
-            # Create a placeholder for the progress bar
-            progress_placeholder = st.empty()
+            # # Create a placeholder for the progress bar
+            # progress_placeholder = st.empty()
 
             total_images = len(image_paths)
+            progress_placeholders = st.empty()
+
             for i, image_path in enumerate(image_paths):
-                mask, duration, annotated = get_image_masks(
-                    image_path, save_as_pkl=True, return_elapsed_time=True, return_annotated=True)
-                comparison_image = generate_head2head_comparison(image_path, annotated)
                 
-                comparison.append(comparison_image)
-                masks.append(mask)
-                durations.append(duration)
-                annotated_images.append(annotated)
+                dir = os.path.splitext(os.path.basename(image_path))[0]
+                print('dir: ', dir)
+                print('image_path: ', image_path)
 
-                # Calculate the progress as a percentage
-                progress = (i + 1) / total_images * 100
+                os.makedirs(os.path.join(SAVE_ROOT_PATH, dir), exist_ok=True)
 
-                # Update the progress bar
-                progress_placeholder.markdown(
-                    generate_progress_bar(progress, 100, gradient),
-                    unsafe_allow_html=True
-                )
+                get_image_masks(
+                    i,
+                    dir, 
+                    image_path, 
+                    save_as_pkl=True, 
+                    save_annotated=True, 
+                    return_elapsed_time=True, 
+                    return_annotated=True, 
+                    )
 
-                # Sleep for a short time to allow the progress bar to update
+                # comparison.append(comparison_image)
+                # masks.append(mask)
+                # durations.append(duration)
+
+                col1, col2 = st.columns(2)
+                col1.image(image_path)
+                col2.image(f"{SAVE_ROOT_PATH}/{dir}/bbox.png")
                 time.sleep(0.1)
-
-            st.success('Done!', icon="✅")
             time.sleep(1)
-            st.experimental_rerun()
-        
-        # st.image(comparison_image, caption='Comparison')
 
-    # Divide the width equally among the number of images
+            # st.success('Done!', icon="✅")
+            # st.experimental_rerun()
 
-    num_images = len(uploaded_image)
-    max_columns = 4
-    num_rows = (num_images + max_columns - 1) // max_columns
-
-    for i in range(num_rows):
-        columns = st.columns(max_columns)
-        for j in range(max_columns):
-            image_index = i * max_columns + j
-            if image_index < num_images:
-                columns[j].image(uploaded_image[image_index])
-                
-
-
+ 
 
 
 if st.sidebar.button("🤙🏻 Summit"):
