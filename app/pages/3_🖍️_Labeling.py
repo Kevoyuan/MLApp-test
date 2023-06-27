@@ -353,7 +353,7 @@ with st.sidebar:
     image_name = os.path.splitext(selected_image)[0]
 
     csv_path = f'labeled_mask/{image_name}.csv'
-    mask_name = f'image/{image_name}.pkl'
+    mask_name = f'data/{image_name}/segmentation.pkl'
     on = st_toggle_switch(
         label="Advance Setting",
         key="switch_1",

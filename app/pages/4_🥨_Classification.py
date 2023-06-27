@@ -2,6 +2,7 @@ import streamlit as st
 from streamlit_option_menu import option_menu
 from streamlit_toggle import st_toggle_switch
 
+
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
