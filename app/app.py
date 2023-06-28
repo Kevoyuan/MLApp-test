@@ -46,20 +46,23 @@ def generate_cork_board(fun_info):
     css = f"""
     <style>
     div#frame {{
+        display: flex; 
+        justify-content: center;  
+        align-items: center;  
         background-color: #F0F0F0;
-        width: 600px;
+        width: 100%;
         height: 250px;
-        padding-top: 35px;
-        padding-left: 35px;
+        # padding-top: 35px;
+        # padding-left: 35px;
         box-shadow: 0 2px 5px rgba(0,0,0,.15);
     }}
 
     .note {{
         width: 500px;
-        height: 160px;
+        height: 150px;
         box-shadow: 0 3px 6px rgba(0,0,0,.25);
         float: left;
-        margin: 8px;
+        margin: 0px;
         border: 1px solid rgba(0,0,0,.15);
         background-color: #FFFFFF;
         border-radius: 10px;
@@ -143,6 +146,7 @@ if uploaded_image:
                 print('image_path: ', image_path)
 
                 os.makedirs(os.path.join(SAVE_ROOT_PATH, dir), exist_ok=True)
+                st.write(os.path.basename(image_path))
 
                 get_image_masks(
                     i,
@@ -157,14 +161,15 @@ if uploaded_image:
                 # comparison.append(comparison_image)
                 # masks.append(mask)
                 # durations.append(duration)
+                add_vertical_space(1)
 
                 col1, col2 = st.columns(2)
-                col1.image(image_path)
-                col2.image(f"{SAVE_ROOT_PATH}/{dir}/bbox.png")
+                col1.image(image_path,caption='Orignal image')
+                col2.image(f"{SAVE_ROOT_PATH}/{dir}/bbox.png",caption='Segmented image')
                 time.sleep(0.1)
             time.sleep(1)
 
-            # st.success('Done!', icon="✅")
+            st.success('Done!', icon="✅")
             # st.experimental_rerun()
 
  

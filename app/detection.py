@@ -38,7 +38,7 @@ def generate_progress_bar(count, total_count, gradient, idx):
 
     .container{idx} {{
         background-color: rgb(192, 192, 192);
-        width: 600px;  
+        width: 100%;  
         height: 20px; 
         border-radius: 20px;
         margin-bottom: 0px
@@ -98,7 +98,7 @@ def get_image_masks(i,dir, image_name, save_as_pkl=False, save_annotated=False, 
     """
     start_time = time.time()
     gradient = "linear-gradient(to right, #4cd964, #5ac8fa, #007aff, #34aadc, #5856d6, #ff2d55)"
-    total_steps = 15
+    total_steps = 14
     progress_placeholder = st.empty()
 
     sam = sam_model_registry[para['MODEL_TYPE']](
@@ -116,6 +116,7 @@ def get_image_masks(i,dir, image_name, save_as_pkl=False, save_annotated=False, 
         3, total_steps, gradient,i), unsafe_allow_html=True)
     
     image_bgr = cv2.imread(image_name)
+    time.sleep(0.1)
     progress_placeholder.markdown(generate_progress_bar(
         10, total_steps, gradient,i), unsafe_allow_html=True)
     
@@ -134,7 +135,7 @@ def get_image_masks(i,dir, image_name, save_as_pkl=False, save_annotated=False, 
         13, total_steps, gradient,i), unsafe_allow_html=True)
     
     masks = [mask['segmentation'] for mask in sorted(
-        sam_result, key=lambda x: x['area'], reverse=True)]
+        sam_result, key=lambda x: x['area'], reverse=True)][1:]
     progress_placeholder.markdown(generate_progress_bar(
         13, total_steps, gradient,i), unsafe_allow_html=True)
 
@@ -173,8 +174,9 @@ def get_image_masks(i,dir, image_name, save_as_pkl=False, save_annotated=False, 
     duration = end_time-start_time
     print(f'{duration}s')
     progress_placeholder.markdown(generate_progress_bar(
-        15, total_steps, gradient,i), unsafe_allow_html=True)
-    st.success(f'Segmentation of {dir}.png is done!', icon="✅")
+        14, total_steps, gradient,i), unsafe_allow_html=True)
+    # st.success(f'Segmentation of {dir}.png is done!', icon="✅")
+    # st.experimental_rerun()
 
     if return_elapsed_time:
         if return_annotated:
