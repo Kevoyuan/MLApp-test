@@ -336,24 +336,33 @@ def load_data(mask_name):
         # process mask and coordinate
 
     df = pd.DataFrame(data)
+    st.write(df.columns.values)
     return df, data
 
 
 ########################################################
-image_folder = "image/"
-# uploaded_image = upload_image(image_folder)
 
-image_files = [f for f in os.listdir(
-    image_folder) if f.endswith((".png", ".jpg", ".jpeg"))]
 
 
 with st.sidebar:
+    image_folder = "image/"
+    # uploaded_image = upload_image(image_folder)
+
+    image_files = [f for f in os.listdir(
+    image_folder) if f.endswith((".png", ".jpg", ".jpeg"))]
     # Create a select list with image file options
     selected_image = st.selectbox("Select an image", image_files)
     image_name = os.path.splitext(selected_image)[0]
-
     csv_path = f'labeled_mask/{image_name}.csv'
     mask_name = f'data/{image_name}/segmentation.pkl'
+    # If this is the first time running, or if the selected image has changed, update the session state
+    if 'selected_image' not in st.session_state or st.session_state['selected_image'] != selected_image:
+        st.session_state['selected_image'] = selected_image  # update the selected image in the session state
+
+
+        
+        st.session_state['df'], data = load_data(mask_name)
+        
     on = st_toggle_switch(
         label="Advance Setting",
         key="switch_1",
@@ -381,6 +390,7 @@ with st.sidebar:
 
                 st.success("The cell label has been cleared.")
         delete_image(image_folder)
+        
 # Construct the full path to the selected image
 image_path = os.path.join(image_folder, selected_image)
 
@@ -390,8 +400,8 @@ if "selected_mask" not in st.session_state:
     st.session_state["selected_mask"] = None
 
 
-if 'df' not in st.session_state:
-    st.session_state['df'], data = load_data(mask_name)
+# if 'df' not in st.session_state:
+#     st.session_state['df'], data = load_data(mask_name)
 
 df = st.session_state['df']
 
