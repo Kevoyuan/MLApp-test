@@ -67,7 +67,7 @@ if classifier == 'KNN':
 
     with col2:
         weights = st.selectbox('weights', ('uniform', 'distance'))
-        metric = st.selectbox('metric', ('l1', 'l2'))
+        metric = st.selectbox('metric', ('l1', 'l2'),index=1)
 
     knn_params = {
         "n_neighbors": n_neighbors,
@@ -86,7 +86,7 @@ elif classifier == "SVC":
 
     with col2:
         kernel = st.selectbox(
-            'kernel', ('linear', 'rbf', 'sigmoid', 'precomputed'))
+            'kernel', ('rbf', 'linear', 'sigmoid', 'precomputed'),index=0)
 
     col1, col2 = st.columns(2)
 
@@ -103,7 +103,7 @@ elif classifier == "Random Forest":
         n_estimators = st.slider(
             'n_estimators', min_value=1, max_value=200, value=100)
         max_depth = st.slider('max_depth', min_value=1,
-                              max_value=100, value=10)
+                              max_value=100, value=None)
     with col2:
         criterion = st.selectbox('criterion', ('gini', 'entropy', 'log_loss'))
         max_features = st.selectbox('max_features', ('sqrt', 'log2', None))
@@ -122,13 +122,13 @@ elif classifier == "MLP":
     with col1:
         hidden_layer_sizes = st.slider(
             'hidden_layer_sizes', min_value=1, max_value=100, value=50)
-        solver = st.selectbox('solver', ('lbfgs', 'sgd', 'adam'))
+        solver = st.selectbox('solver', ('lbfgs', 'sgd', 'adam'),index=2)
         learning_rate = st.selectbox(
             'learning_rate', ('constant', 'invscaling', 'adaptive'))
 
     with col2:
         activation = st.selectbox(
-            'activation', ('identity', 'logistic', 'tanh', 'relu'))
+            'activation', ('identity', 'logistic', 'tanh', 'relu'),index=3)
         alpha = st.number_input('alpha', value=1e-4, format="%.4f")
         learning_rate_init = st.select_slider('learning_rate_init', options=[
                                               '0.0001', '0.0005', '0.001', '0.005', '0.01', '0.05', '0.1'])
@@ -152,14 +152,14 @@ elif classifier == "VAE":
         batch_size = st.slider('max_epoch', min_value=20,
                                max_value=100, value=100)
         activation = st.selectbox(
-            'activation', ('identity', 'logistic', 'tanh', 'relu'))
+            'activation', ('identity', 'logistic', 'tanh', 'relu'),index=3)
         alpha = st.number_input('alpha', value=1e-4, format="%.4f")
         learning_rate_init = st.select_slider('learning_rate_init', options=[
                                               '0.0001', '0.0005', '0.001', '0.005', '0.01', '0.05', '0.1'])
 
-        solver = st.selectbox('solver', ('lbfgs', 'sgd', 'adam'))
+        solver = st.selectbox('solver', ('lbfgs', 'sgd', 'adam'),index=2)
         learning_rate = st.selectbox(
-            'learning_rate', ('constant', 'invscaling', 'adaptive'))
+            'learning_rate', ('constant', 'invscaling', 'adaptive'),index=0)
 
     with col2:
         hidden_layers = st.slider(
