@@ -154,7 +154,7 @@ elif classifier == "VAE":
             'activation', ('identity', 'logistic', 'tanh', 'relu'))
         alpha = st.number_input('alpha', value=1e-4, format="%.4f")
         learning_rate_init = st.slider(
-            'learning_rate_init', min_value=0.001, max_value=0.1, value=0.001)
+            'learning_rate_init', min_value=1e-4, max_value=0.1, value=0.001, format="%.4f")
         solver = st.selectbox('solver', ('lbfgs', 'sgd', 'adam'))
         learning_rate = st.selectbox(
             'learning_rate', ('constant', 'invscaling', 'adaptive'))
