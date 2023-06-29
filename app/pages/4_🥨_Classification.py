@@ -146,24 +146,34 @@ elif classifier == "VAE":
     st.header("VAE")
     col1, col2 = st.columns(2)
     with col1:
-        hidden_layers = st.slider(
-            'hidden_layers', min_value=1, max_value=10, value=5)
-        hidden_layer_sizes = st.slider(
-            'hidden_layer_sizes', min_value=1, max_value=100, value=50)
-        solver = st.selectbox('solver', ('lbfgs', 'sgd', 'adam'))
-        learning_rate = st.selectbox(
-            'learning_rate', ('constant', 'invscaling', 'adaptive'))
 
-    with col2:
+        max_epoch = st.selectbox('max_epoch', options=[8, 16, 32, 64], index=0)
+        batch_size = st.slider('max_epoch', min_value=20,
+                               max_value=100, value=100)
         activation = st.selectbox(
             'activation', ('identity', 'logistic', 'tanh', 'relu'))
         alpha = st.number_input('alpha', value=1e-4, format="%.4f")
         learning_rate_init = st.slider(
             'learning_rate_init', min_value=0.001, max_value=0.1, value=0.001)
+        solver = st.selectbox('solver', ('lbfgs', 'sgd', 'adam'))
+        learning_rate = st.selectbox(
+            'learning_rate', ('constant', 'invscaling', 'adaptive'))
+
+    with col2:
+        hidden_layers = st.slider(
+            'hidden_layers', min_value=1, max_value=3, value=2)
+
+        hidden_layer_sizes = []
+        for i in range(hidden_layers):
+            size = st.slider(
+                f'Size of hidden layer {i+1}', min_value=1, max_value=100, value=50)
+            hidden_layer_sizes.append(size)
 
     vae_params = {
         'hidden_layers': hidden_layers,
-        'hidden_layer_sizes': hidden_layer_sizes,
+        "hidden_layer_sizes": tuple(hidden_layer_sizes),
+        'max_epoch': max_epoch,
+        'batch_size': batch_size,
         'activation': activation,
         'solver': solver,
         'alpha': alpha,
