@@ -130,8 +130,8 @@ elif classifier == "MLP":
         activation = st.selectbox(
             'activation', ('identity', 'logistic', 'tanh', 'relu'))
         alpha = st.number_input('alpha', value=1e-4, format="%.4f")
-        learning_rate_init = st.slider(
-            'learning_rate_init', min_value=0.001, max_value=0.1, value=0.001)
+        learning_rate_init = st.select_slider('learning_rate_init', options=[
+                                              '0.0001', '0.0005', '0.001', '0.005', '0.01', '0.05', '0.1'])
 
     mlp_params = {
         'hidden_layer_sizes': hidden_layer_sizes,
@@ -144,17 +144,19 @@ elif classifier == "MLP":
 
 elif classifier == "VAE":
     st.header("VAE")
+
     col1, col2 = st.columns(2)
     with col1:
 
-        max_epoch = st.selectbox('max_epoch', options=[8, 16, 32, 64], index=0)
+        max_epoch = st.select_slider('max_epoch', options=[8, 16, 32, 64])
         batch_size = st.slider('max_epoch', min_value=20,
                                max_value=100, value=100)
         activation = st.selectbox(
             'activation', ('identity', 'logistic', 'tanh', 'relu'))
         alpha = st.number_input('alpha', value=1e-4, format="%.4f")
-        learning_rate_init = st.slider(
-            'learning_rate_init', min_value=1e-4, max_value=0.1, value=0.001, format="%.4f")
+        learning_rate_init = st.select_slider('learning_rate_init', options=[
+                                              '0.0001', '0.0005', '0.001', '0.005', '0.01', '0.05', '0.1'])
+
         solver = st.selectbox('solver', ('lbfgs', 'sgd', 'adam'))
         learning_rate = st.selectbox(
             'learning_rate', ('constant', 'invscaling', 'adaptive'))
