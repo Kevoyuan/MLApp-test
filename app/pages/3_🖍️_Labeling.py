@@ -1,13 +1,17 @@
 import pickle
 import numpy as np
 from streamlit_toggle import st_toggle_switch
+import shutil
+import sys
 
 import streamlit as st
 from streamlit_extras.add_vertical_space import add_vertical_space
 from streamlit_extras.switch_page_button import switch_page
 from streamlit_extras.no_default_selectbox import selectbox
+from css_style import generate_progress_bar, generate_count_bar
 
 from streamlit_image_coordinates import streamlit_image_coordinates
+from username_util import handle_username, create_directory_if_not_exists
 
 from PIL import Image, ImageDraw
 import os
@@ -19,6 +23,14 @@ st.set_page_config(
     # layout="wide"
 )
 
+hide_menu_style = """
+        <style>
+        #MainMenu {visibility: hidden; }
+        footer {visibility: hidden;}
+        </style>
+        """
+st.markdown(hide_menu_style, unsafe_allow_html=True)
+
 
 def delete_file(file_path):
     """Delete a file at the given path."""
@@ -27,6 +39,12 @@ def delete_file(file_path):
         st.success("File removed successfully.")
     else:
         st.error("File not found.")
+
+
+def delete_folder(folder_path):
+    """Delete a folder at a specified path."""
+    if os.path.exists(folder_path):
+        shutil.rmtree(folder_path)
 
 
 def delete_image(image_folder):
@@ -44,6 +62,8 @@ def delete_image(image_folder):
         image_path = os.path.join(image_folder, selected_image)
         if st.sidebar.button('Delete Image'):
             delete_file(image_path)
+            delete_file(f'labeled_mask/{image_name}.csv')
+            delete_folder(f'data/{image_name}')
 
 
 def is_point_in_mask(point, mask):
@@ -57,15 +77,7 @@ def is_point_in_mask(point, mask):
         return False
 
 
-def draw_mask_if_point_in_mask(img, point, mask):
-    if is_point_in_mask(point, mask):
-        mask_indices = np.where(mask == 1)
-        img[mask_indices] = [255, 0, 0]  # change masked pixels to red
-
-    return img
-
-
-def change_label(mask, new_label, df, csv_path):
+def change_label(mask, new_label, df, csv_path, mask_name):
     """Change the label of the given mask to the new label and save the changes to a CSV file."""
     # Find the index of the row that corresponds to the given mask
     mask_index = None
@@ -79,9 +91,38 @@ def change_label(mask, new_label, df, csv_path):
 
     # Save the DataFrame back to the CSV file
     df.to_csv(csv_path, index=False)
+    # labeled_mask(mask_name, csv_path)
 
 
-def styled_button(col, text, label, df, csv_path):
+@st.cache_data
+def labeled_mask(mask_name, csv_name):
+    # Read the pickle file
+    with open(mask_name, 'rb') as f:
+        masks = pickle.load(f)
+
+    # Load the CSV data
+    df_csv = pd.read_csv(csv_name, header=0)
+    df_csv['label'] = df_csv['label'].fillna('unlabeled')
+    print(df_csv)
+
+    # Initialize an empty list to store the combined data
+    combined_data = []
+
+    # Iterate over the masks and labels
+    for i in range(len(masks)):
+        # Check if the index exists in the DataFrame
+        if i in df_csv.index:
+            label = df_csv['label'].iloc[i]
+        else:
+            label = 'default_value'  # Or some other default value
+
+        # Create a dictionary with the mask and label
+        data_dict = {'mask': masks[i], 'label': label}
+        combined_data.append(data_dict)
+
+    return combined_data
+
+def styled_button(col, label, df, csv_path, mask_name):
     """Create a styled button. When the button is clicked, change the label of the highlighted cell to the button's label."""
     # If the current button label matches the last clicked button label, turn it green
     if st.session_state.get("last_clicked_button") == label:
@@ -98,14 +139,15 @@ def styled_button(col, text, label, df, csv_path):
         button_color = '🤍'  # white
 
     # Create the button
-    button_clicked = col.button(f'{button_color} {text}')
+    button_clicked = col.button(f'{button_color} {label}')
 
     # If the button is clicked, change the label of the selected mask to this button's label and update the last clicked button
     if button_clicked and st.session_state["selected_mask"] is not None:
         st.session_state['last_clicked_button'] = label
         # Pass the label as a string
         change_label(st.session_state["selected_mask"], str(
-            label), df, csv_path)
+            label), df, csv_path, mask_name)
+
         # Reset the selected mask
         st.session_state["selected_mask"] = None
         st.experimental_rerun()
@@ -115,151 +157,7 @@ def styled_button(col, text, label, df, csv_path):
         st.session_state['last_clicked_button'] = None
 
 
-def generate_progress_bar(label, count, gradient):
-    display_count = count/(data['Count'].max()+1)*100+10
-    css = f"""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
-
-    body {{
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-        sans-serif;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-    }}
-
-    .flex-container {{
-        display: flex;
-        align-items: center;
-        margin-bottom: -5px;
-        justify-content: flex-start;
-        margin-top: 0px
-    }}
-
-    .title {{
-        width: 40px; 
-        margin-right: 10px;
-        margin: -5px;
-        # display: flex;       
-        align-items: center;
-        font-size: 16px;
-        # font-weight: bold;
-        text-align: left; 
-        color: #333; 
-    }}
-
-    .container {{
-        background-color: #e3e7eb;
-        width: 80%;  
-        # flex-grow: 1;
-        height: 18px; 
-        border-radius: 20px;
-        margin-bottom: 0px
-    }}
-
-    .text-{label} {{
-        background-image: {gradient};
-        color: white;
-        padding: 0.1%;
-        text-align: right;
-        font-size: 22px;
-        font-weight: bold; 
-        text-shadow: 2px 2px 8px #000000; 
-        border-radius: 22px;
-        height: 100%;
-        line-height: 15px;
-        width: {display_count}%;  
-        animation: progress-bar-width-{label} 1.5s ease-out 1;
-        transition: width 1.2s ease-out;
-        margin-top: 0px
-        margin-bottom: 0px
-    }}
-
-    .percent-{label} {{
-        width: {display_count}%;
-    }}
-
-    @keyframes progress-bar-width-{label} {{
-        0% {{ width: 0; }}
-        100% {{ width: {display_count}%; }}  
-    }}
-    </style>
-    """
-
-    # Inject the CSS into the Streamlit app
-    st.markdown(css, unsafe_allow_html=True)
-
-    # Create progress bar with custom CSS
-    st.markdown(f"""
-    <div class="flex-container">
-        <div class="title">{label}</div>
-        <div class="container">
-            <div class="text-{label} percent-{label}">{int(count)}</div> 
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-def generate_count_bar(label, count, total, gradient):
-    if total != 0:
-        display_count = count / total * 100
-    else:
-        display_count = 0  # or whatever value you want to assign when total is zero
-
-    css = f"""
-    <style>
-    @font-face {{
-        font-family: "San Francisco";
-        font-weight: 400;
-        src: url("https://applesocial.s3.amazonaws.com/assets/styles/fonts/sanfrancisco/sanfranciscodisplay-regular-webfont.woff");
-    }}
-
-    .vertical-bar-container {{
-        height: 300px;
-        width: 30px;
-        display: flex;
-        flex-direction: column-reverse;
-        align-items: center;
-        background-color: #f2f2f2;
-        border-radius: 10px;
-        padding: 5px;
-        margin-right: 10px;
-    }}
-
-    .vertical-bar {{
-        background-image: {gradient};
-        width: 100%;
-        border-radius: 10px;
-        transition: height 1s ease-in-out;
-    }}
-
-    .percentage {{
-        margin-top: 5px;
-        font-size: 14px;
-        font-weight: bold;
-        font-family: "San Francisco", -apple-system, BlinkMacSystemFont, sans-serif;
-    }}
-
-    .label {{
-        font-size: 12px;
-        color: #555;
-        font-family: "San Francisco", -apple-system, BlinkMacSystemFont, sans-serif;
-    }}
-    </style>
-    """
-
-    st.markdown(css, unsafe_allow_html=True)
-
-    st.markdown(f"""
-    <div class="vertical-bar-container">
-        <div class="vertical-bar" style="height: {display_count}%;"></div>
-    </div>
-    <div class="percentage">{display_count:.1f}%</div>
-    <div class="label">{label}</div>
-    """, unsafe_allow_html=True)
-
-
+@st.cache_data
 def merge_csv(directory):
     # Use os.listdir to get all files in the directory
     all_files = os.listdir(directory)
@@ -283,7 +181,9 @@ def merge_csv(directory):
     merged_df.to_csv('labeled_mask/merged.csv', index=False)
 
 
+@st.cache_data
 def clear_column(csv_path, column_name, mask_name):
+
     # Load CSV into a DataFrame
     df = pd.read_csv(csv_path)
 
@@ -295,7 +195,7 @@ def clear_column(csv_path, column_name, mask_name):
 
     # df = pd.DataFrame(columns=['masks', 'label'])
 
-    st.session_state['df'], data = load_data(mask_name)
+    st.session_state['df'] = load_data(mask_name)
 
 
 def apply_colored_masks(image_path, masks, labels, color_dict):
@@ -325,44 +225,69 @@ def apply_colored_masks(image_path, masks, labels, color_dict):
 ###############################################################
 
 
+@st.cache_data
 def load_data(mask_name):
     # Read the pickle file and create the DataFrame
     with open(mask_name, 'rb') as f:
         masks = pickle.load(f)
 
-    data = []
+    mask_list = []
     for i in range(len(masks)):
-        data.append({'masks': masks[i]})
+        mask_list.append({'masks': masks[i]})
         # process mask and coordinate
 
-    df = pd.DataFrame(data)
-    st.write(df.columns.values)
-    return df, data
+    df = pd.DataFrame(mask_list)
 
+    # df.to_csv(csv_path, index=False)
+    # st.write(df.columns.values)
+    # print(mask_list)
+
+    return df
+
+@st.cache_data
+def process_and_get_image_coordinates(box_img, masks_to_color, mask_labels, color_dict):
+    img = apply_colored_masks(box_img, masks_to_color, mask_labels, color_dict)
+    value = streamlit_image_coordinates(img)
+    return value
 
 ########################################################
+username = handle_username()
 
+# print(username)
+user_folder = f'./user_folders/{username}'
+create_directory_if_not_exists(user_folder)
+
+# SAVE_ROOT_PATH = '/Volumes/group05/APP_test/dataset'
+
+SAVE_ROOT_PATH = f'{user_folder}/dataset/sam'
+
+# SAVE_ROOT_PATH = '/Volumes/group05/APP_test/dataset'
 
 
 with st.sidebar:
-    image_folder = "image/"
+    image_folder = f'{user_folder}/dataset/original_image/'
     # uploaded_image = upload_image(image_folder)
 
     image_files = [f for f in os.listdir(
-    image_folder) if f.endswith((".png", ".jpg", ".jpeg"))]
+        image_folder) if f.endswith((".png", ".jpg", ".jpeg"))]
     # Create a select list with image file options
     selected_image = st.selectbox("Select an image", image_files)
     image_name = os.path.splitext(selected_image)[0]
-    csv_path = f'labeled_mask/{image_name}.csv'
-    mask_name = f'data/{image_name}/segmentation.pkl'
+    csv_path = f'{SAVE_ROOT_PATH}/{image_name}/{image_name}.csv'
+    mask_name = f'{SAVE_ROOT_PATH}/{image_name}/segmentation.pkl'
+    box_img = f'{SAVE_ROOT_PATH}/{image_name}/bbox.png'
+    if not os.path.isfile(mask_name) or not os.path.isfile(box_img):
+        st.warning(
+            f'The image {image_name} is not segmented, please run the segmentation.')
+        sys.exit('Program terminated.')
     # If this is the first time running, or if the selected image has changed, update the session state
     if 'selected_image' not in st.session_state or st.session_state['selected_image'] != selected_image:
-        st.session_state['selected_image'] = selected_image  # update the selected image in the session state
+        # update the selected image in the session state
+        st.session_state['selected_image'] = selected_image
 
+        st.session_state['df'] = load_data(
+            mask_name)
 
-        
-        st.session_state['df'], data = load_data(mask_name)
-        
     on = st_toggle_switch(
         label="Advance Setting",
         key="switch_1",
@@ -384,13 +309,16 @@ with st.sidebar:
 
             # Check if the button is clicked
             if button_clicked:
-                clear_column(csv_path, 'label', mask_name)
+                if not os.path.isfile(csv_path):
+                    pass
+                else:
+                    clear_column(csv_path, 'label', mask_name)
 
                 # st.session_state['df']=pd.DataFrame(columns=['masks', 'label'])
 
                 st.success("The cell label has been cleared.")
         delete_image(image_folder)
-        
+
 # Construct the full path to the selected image
 image_path = os.path.join(image_folder, selected_image)
 
@@ -399,9 +327,6 @@ if "points" not in st.session_state:
 if "selected_mask" not in st.session_state:
     st.session_state["selected_mask"] = None
 
-
-# if 'df' not in st.session_state:
-#     st.session_state['df'], data = load_data(mask_name)
 
 df = st.session_state['df']
 
@@ -412,136 +337,142 @@ if 'label' not in df.columns and not df.empty:
 labels = {'WBC', 'RBC', 'AGG', 'PLT', 'OOF'}
 label_lists = {}
 
-unique_labels = df['label'].unique()  # This will ignore NaN values
-if len(unique_labels) > 0:
-    for label in unique_labels:
-        masks = df.loc[df['label'] == label, 'masks'].tolist()
-        list_name = f"list_masks_{label}"
-        label_lists[list_name] = masks
-
-# Check if the csv file exists
-if not os.path.isfile(csv_path):
-    # If the file doesn't exist, create a new DataFrame with the appropriate columns
-    mask_label_frame = pd.DataFrame(columns=['masks', 'label'])
-    # Save the DataFrame as a CSV file
-    mask_label_frame.to_csv(csv_path, index=False)
+# Check if the 'label' column exists in the DataFrame
+if 'label' not in df.columns:
+    st.image(box_img)
+    st.success("No cells detected.")
+    # You can choose to exit the script or perform any other desired action
 else:
-    # If the file exists, read it
-    mask_label_frame = pd.read_csv(csv_path)
+    unique_labels = df['label'].unique()
 
-# Define a dictionary that maps labels to colors
-color_dict = {
-    'WBC': (89, 75, 110),  # White
-    'RBC': (255, 0, 0),      # Red
-    'AGG': (0, 0, 255),      # Blue
-    'PLT': (255, 140, 0),    # Orange
-    'OOF': (128, 0, 128)     # Purple
-}
+    if len(unique_labels) > 0:
+        for label in unique_labels:
+            masks = df.loc[df['label'] == label, 'masks'].tolist()
+            list_name = f"list_masks_{label}"
+            label_lists[list_name] = masks
 
+    # Check if the csv file exists
+    if not os.path.isfile(csv_path):
+        # If the file doesn't exist, create a new DataFrame with the appropriate columns
+        mask_label_frame = pd.DataFrame(columns=['masks', 'label'])
+        # Save the DataFrame as a CSV file
+        mask_label_frame.to_csv(csv_path, index=False)
+    else:
+        # If the file exists, read it
+        mask_label_frame = pd.read_csv(csv_path)
 
-mask_labels = mask_label_frame['label']
-masks_to_color = df['masks']
+    # Define a dictionary that maps labels to colors
+    color_dict = {
+        'WBC': (89, 75, 110),  # White
+        'RBC': (255, 0, 0),      # Red
+        'AGG': (0, 0, 255),      # Blue
+        'PLT': (255, 140, 0),    # Orange
+        'OOF': (128, 0, 128)     # Purple
+    }
 
-col1, col2 = st.columns([5, 1])
+    mask_labels = mask_label_frame['label']
+    masks_to_color = df['masks']
 
-with col1:
-    img = apply_colored_masks(
-        image_path, masks_to_color, mask_labels, color_dict)
-    value = streamlit_image_coordinates(img)
+    col1, col2 = st.columns([5, 1])
+
+    with col1:
+        img = apply_colored_masks(
+            box_img, masks_to_color, mask_labels, color_dict)
+        value = streamlit_image_coordinates(img)
 ############################################################################
 
-# initial point coordinate
-point = 0, 0
-if value is not None:
+    # initial point coordinate
+    point = 0, 0
+    if value is not None:
 
-    point = value["x"], value["y"]
+        point = value["x"], value["y"]
 
-    st.session_state["points"].append(point)
+        st.session_state["points"].append(point)
 
-    for label, masks in label_lists.items():
-        for mask in masks:
+        for label, masks in label_lists.items():
+            for mask in masks:
 
-            if is_point_in_mask(point, mask):
-                st.session_state["selected_mask"] = mask
-                st.session_state['df'] = df
-                break
+                if is_point_in_mask(point, mask):
+                    st.session_state["selected_mask"] = mask
+                    st.session_state['df'] = df
+                    break
 
-with st.sidebar:
-    if on:
+    with st.sidebar:
+        if on:
 
-        st.write("cursor: ", point)
+            st.write("cursor: ", point)
 
+    ############################################################################
 
-############################################################################
+    # count of unlabeled masks
+    unlabeled_count = mask_label_frame['label'].isna().sum()
+    labeled_count = mask_label_frame['label'].value_counts().sum()
 
-# count of unlabeled masks
-unlabeled_count = mask_label_frame['label'].isna().sum()
-labeled_count = mask_label_frame['label'].value_counts().sum()
+    # st.write(labeled_count)
+    total_count = len(mask_label_frame)  # total count of masks
+    # example gradient
+    with col2:
+        # add_vertical_space(5)
+        gradient = "linear-gradient(#94FAF0 , #31D1D0)"
 
-# st.write(labeled_count)
-total_count = len(mask_label_frame)  # total count of masks
-# example gradient
-with col2:
-    # add_vertical_space(5)
-    gradient = "linear-gradient(#94FAF0 , #31D1D0)"
+        generate_count_bar("labeled", labeled_count, total_count, gradient)
 
-    generate_count_bar("labeled", labeled_count, total_count, gradient)
+    # # Create buttons for each cell
+    cell_types = ["WBC", "RBC", "PLT", "AGG", "OOF"]
+    columns = st.columns(7)
+    for cell_type, col in zip(cell_types, columns):
+        styled_button(col, cell_type, df, csv_path, mask_name)
 
+    mask_label = pd.read_csv(csv_path)
 
-# st.write(is_point_in_mask(point, masks[0]))
+    label_counts = mask_label['label'].value_counts()
 
+    complete_label_counts = pd.Series(0, index=labels)
+    complete_label_counts = complete_label_counts.add(
+        label_counts, fill_value=0)
 
-# # Create buttons for each cell
-col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
+    # save the mask + Label data to npy file
+    combined_data = labeled_mask(mask_name, csv_path)
+    npy_file = f'{SAVE_ROOT_PATH}/{image_name}/{image_name}.npy'
+    np.save(npy_file, combined_data)
 
+    from detection import save_boxes_from_npy
 
-styled_button(col1, "WBC", "WBC", df, csv_path)
-styled_button(col2, "RBC", "RBC", df, csv_path)
-styled_button(col3, 'PLT', 'PLT', df, csv_path)
-styled_button(col4, "AGG", "AGG", df, csv_path)
-styled_button(col5, "OOF", "OOF", df, csv_path)
+    # save_boxes_from_npy(user_folder, npy_file)
 
-mask_label = pd.read_csv(csv_path)
+    add_vertical_space(2)
+    ###########################################################################
 
-label_counts = mask_label['label'].value_counts()
-complete_label_counts = pd.Series(0, index=labels)
-complete_label_counts = complete_label_counts.add(label_counts, fill_value=0)
+    # Bar chart
 
-# st.write(complete_label_counts)
+    # initial data
+    data = complete_label_counts.reset_index()
+    data.columns = ['Label', 'Count']
+    df_count = data['Count']
+    wbc_count = data.loc[data['Label'] == 'WBC', 'Count'].iloc[0]
+    rbc_count = data.loc[data['Label'] == 'RBC', 'Count'].iloc[0]
+    plt_count = data.loc[data['Label'] == 'PLT', 'Count'].iloc[0]
+    agg_count = data.loc[data['Label'] == 'AGG', 'Count'].iloc[0]
+    oof_count = data.loc[data['Label'] == 'OOF', 'Count'].iloc[0]
 
-
-###########################################################################
-
-# Bar chart
-
-# initial data
-data = complete_label_counts.reset_index()
-data.columns = ['Label', 'Count']
-
-wbc_count = data.loc[data['Label'] == 'WBC', 'Count'].iloc[0]
-rbc_count = data.loc[data['Label'] == 'RBC', 'Count'].iloc[0]
-plt_count = data.loc[data['Label'] == 'PLT', 'Count'].iloc[0]
-agg_count = data.loc[data['Label'] == 'AGG', 'Count'].iloc[0]
-oof_count = data.loc[data['Label'] == 'OOF', 'Count'].iloc[0]
-
-generate_progress_bar(
-    "WBC", wbc_count, "linear-gradient(to right, #a0a5b9 0%, #cfd9df 100%)")
-generate_progress_bar(
-    'RBC', rbc_count, "linear-gradient(to right, #e3e7eb, #cfd9df)")
-generate_progress_bar(
-    'PLT', plt_count, "linear-gradient(to right, #cfd9df, #a0a5b9)")
-generate_progress_bar(
-    'AGG', agg_count, "linear-gradient(to right, #a0a5b9, #e3e7eb)")
-generate_progress_bar(
-    'OOF', oof_count, "linear-gradient(to right, #cfd9df, #a0a5b9)")
+    generate_progress_bar(
+        "WBC", df_count, wbc_count, "linear-gradient(to right, #a0a5b9 0%, #cfd9df 100%)")
+    generate_progress_bar(
+        'RBC', df_count, rbc_count, "linear-gradient(to right, #e3e7eb, #cfd9df)")
+    generate_progress_bar(
+        'PLT', df_count, plt_count, "linear-gradient(to right, #cfd9df, #a0a5b9)")
+    generate_progress_bar(
+        'AGG', df_count, agg_count, "linear-gradient(to right, #a0a5b9, #e3e7eb)")
+    generate_progress_bar(
+        'OOF', df_count, oof_count, "linear-gradient(to right, #cfd9df, #a0a5b9)")
 
 
 ###############################################################
 
-add_vertical_space(2)
 
 # Create three columns
 # col1, col2, col3 = st.columns([2, 2, 1])
 if st.sidebar.button("🤙🏻 Summit"):
     merge_csv('labeled_mask')
+
     switch_page("Classification")
