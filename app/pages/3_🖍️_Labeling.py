@@ -1,3 +1,4 @@
+
 import pickle
 import numpy as np
 from streamlit_toggle import st_toggle_switch
@@ -11,7 +12,6 @@ from streamlit_extras.no_default_selectbox import selectbox
 from css_style import generate_progress_bar, generate_count_bar
 
 from streamlit_image_coordinates import streamlit_image_coordinates
-# from username_util import handle_username, create_directory_if_not_exists
 
 from PIL import Image, ImageDraw
 import os
@@ -30,10 +30,9 @@ hide_menu_style = """
         </style>
         """
 st.markdown(hide_menu_style, unsafe_allow_html=True)
-
-from detection import save_boxes_from_npy
+from user_util import get_directory_size, create_directory_if_not_exists
 from config import USER_FOLDER_PATH, SAVE_ROOT_PATH
-
+from detection import save_boxes_from_npy
 
 def delete_file(file_path):
     """Delete a file at the given path."""
@@ -59,14 +58,22 @@ def delete_image(image_folder):
 
     # Let the user select an image to delete
     selected_image = selectbox("Select an image to delete", image_files)
+    if selected_image is not None:
+        selected_image_name = selected_image.split(".")[0]
+        print(f"image_name: {selected_image_name}")
 
     if selected_image is not None:
+        folder_size = get_directory_size(f'{SAVE_ROOT_PATH}/{selected_image_name}')
+        st.write(
+            f"The image folder \"{selected_image_name}\" is {folder_size / (1024 * 1024):.2f} MB")
         # Delete the selected image
         image_path = os.path.join(image_folder, selected_image)
         if st.sidebar.button('Delete Image'):
+
             delete_file(image_path)
-            delete_file(f'labeled_mask/{image_name}.csv')
-            delete_folder(f'data/{image_name}')
+            # delete_file(f'labeled_mask/{image_name}.csv')
+            delete_folder(f'{SAVE_ROOT_PATH}/{selected_image_name}')
+            
 
 
 def is_point_in_mask(point, mask):
@@ -187,7 +194,7 @@ def merge_csv(directory):
     merged_df.to_csv('labeled_mask/merged.csv', index=False)
 
 
-@st.cache_data
+# @st.cache_data
 def clear_column(csv_path, column_name, mask_path):
 
     # Load CSV into a DataFrame
@@ -203,7 +210,7 @@ def clear_column(csv_path, column_name, mask_path):
 
     st.session_state['df'] = load_data(mask_path)
 
-
+# @st.cache_data
 def apply_colored_masks(image_path, masks, labels, color_dict):
     with Image.open(image_path) as img:
         img = img.convert('RGB')
@@ -251,16 +258,11 @@ def load_data(mask_path):
     return df
 
 
-@st.cache_data
-def process_and_get_image_coordinates(box_img, masks_to_color, mask_labels, color_dict):
-    img = apply_colored_masks(box_img, masks_to_color, mask_labels, color_dict)
-    value = streamlit_image_coordinates(img)
-    return value
-
 
 # @st.cache_data(experimental_allow_widgets=True)
 def get_image_data():
-    image_folder = f'{USER_FOLDER_PATH}/dataset/original_image/'
+    image_folder = f'{USER_FOLDER_PATH}/dataset/original/'
+    
     image_files = [f for f in os.listdir(
         image_folder) if f.endswith((".png", ".jpg", ".jpeg"))]
     selected_image = st.selectbox("Select an image", image_files)
@@ -271,11 +273,94 @@ def get_image_data():
 
     return image_folder, image_name, selected_image, csv_path, mask_path, box_img
 
+
+@st.cache_data
 def check_segmentation(mask_path, box_img, image_name):
     if not os.path.isfile(mask_path) or not os.path.isfile(box_img):
         st.warning(
             f'The image {image_name} is not segmented, please run the segmentation.')
         sys.exit('Program terminated.')
+
+
+def get_or_create_mask_label_frame(csv_path):
+    # Check if the csv file exists
+    if not os.path.isfile(csv_path):
+        # If the file doesn't exist, create a new DataFrame with the appropriate columns
+        mask_label_frame = pd.DataFrame(columns=['masks', 'label'])
+        # Save the DataFrame as a CSV file
+        mask_label_frame.to_csv(csv_path, index=False)
+    else:
+        # If the file exists, read it
+        mask_label_frame = pd.read_csv(csv_path)
+
+    return mask_label_frame
+
+
+def process_point(value, label_lists, df):
+    # initial point coordinate
+    point = 0, 0
+    if value is not None:
+        point = value["x"], value["y"]
+        st.session_state["points"].append(point)
+
+        for label, masks in label_lists.items():
+            for mask in masks:
+                if is_point_in_mask(point, mask):
+                    st.session_state["selected_mask"] = mask
+                    st.session_state['df'] = df
+                    break
+
+
+def generate_labeled_count_bar(mask_label_frame):
+    # count of unlabeled masks
+    unlabeled_count = mask_label_frame['label'].isna().sum()
+    labeled_count = mask_label_frame['label'].value_counts().sum()
+
+    # st.write(labeled_count)
+    total_count = len(mask_label_frame)  # total count of masks
+
+    # example gradient
+    gradient = "linear-gradient(#94FAF0 , #31D1D0)"
+
+    generate_count_bar("labeled", labeled_count, total_count, gradient)
+
+def process_labels_and_generate_bars(mask_label_frame, mask_path, csv_path, image_name, labels):
+    label_counts = mask_label_frame['label'].value_counts()
+
+    complete_label_counts = pd.Series(0, index=labels)
+    complete_label_counts = complete_label_counts.add(label_counts, fill_value=0)
+
+    # save the mask + Label data to npy file
+    combined_data = labeled_mask(mask_path, csv_path)
+    npy_file = f'{SAVE_ROOT_PATH}/{image_name}/{image_name}.npy'
+    np.save(npy_file, combined_data)
+
+    save_boxes_from_npy(dir='dataset',npy_file=f'{image_name}.npy')
+
+    # add_vertical_space(2)
+    ###########################################################################
+
+    # Bar chart
+
+    # initial data
+    data = complete_label_counts.reset_index()
+    data.columns = ['Label', 'Count']
+    df_count = data['Count']
+
+    # Define a dictionary that maps labels to gradients
+    gradient_dict = {
+        'WBC': "linear-gradient(to right, #a0a5b9 0%, #cfd9df 100%)",
+        'RBC': "linear-gradient(to right, #e3e7eb, #cfd9df)",
+        'PLT': "linear-gradient(to right, #cfd9df, #a0a5b9)",
+        'AGG': "linear-gradient(to right, #a0a5b9, #e3e7eb)",
+        'OOF': "linear-gradient(to right, #cfd9df, #a0a5b9)"
+    }
+
+    # Generate progress bars for each label
+    for label, gradient in gradient_dict.items():
+        label_count = data.loc[data['Label'] == label, 'Count'].iloc[0]
+        generate_progress_bar(label, df_count, label_count, gradient)
+
 ########################################################
 # username = handle_username()
 
@@ -293,7 +378,7 @@ def check_segmentation(mask_path, box_img, image_name):
 
 
 with st.sidebar:
-
+    # print(USER_FOLDER_PATH)
     image_folder, image_name, selected_image, csv_path, mask_path, box_img = get_image_data()
 
     check_segmentation(mask_path, box_img, image_name)
@@ -334,8 +419,8 @@ with st.sidebar:
                 # st.session_state['df']=pd.DataFrame(columns=['masks', 'label'])
 
                 st.success("The cell label has been cleared.")
-        delete_image(image_folder)
 
+        delete_image(image_folder)
 
 
 if "points" not in st.session_state:
@@ -367,15 +452,8 @@ else:
             list_name = f"list_masks_{label}"
             label_lists[list_name] = masks
 
-    # Check if the csv file exists
-    if not os.path.isfile(csv_path):
-        # If the file doesn't exist, create a new DataFrame with the appropriate columns
-        mask_label_frame = pd.DataFrame(columns=['masks', 'label'])
-        # Save the DataFrame as a CSV file
-        mask_label_frame.to_csv(csv_path, index=False)
-    else:
-        # If the file exists, read it
-        mask_label_frame = pd.read_csv(csv_path)
+    # Check if the csv file exists and generate mask+label dataframe
+    mask_label_frame = get_or_create_mask_label_frame(csv_path)
 
     # Define a dictionary that maps labels to colors
     color_dict = {
@@ -397,41 +475,18 @@ else:
         value = streamlit_image_coordinates(img)
 ############################################################################
 
-    # initial point coordinate
-    point = 0, 0
-    if value is not None:
-
-        point = value["x"], value["y"]
-
-        st.session_state["points"].append(point)
-
-        for label, masks in label_lists.items():
-            for mask in masks:
-
-                if is_point_in_mask(point, mask):
-                    st.session_state["selected_mask"] = mask
-                    st.session_state['df'] = df
-                    break
+    # initial point coordinate get the cursor point and its state
+    process_point(value, label_lists, df)
 
     with st.sidebar:
         if on:
-
-            st.write("cursor: ", point)
+            st.write("cursor: ", st.session_state["points"][-1])
+            pass
 
     ############################################################################
 
-    # count of unlabeled masks
-    unlabeled_count = mask_label_frame['label'].isna().sum()
-    labeled_count = mask_label_frame['label'].value_counts().sum()
-
-    # st.write(labeled_count)
-    total_count = len(mask_label_frame)  # total count of masks
-    # example gradient
     with col2:
-        # add_vertical_space(5)
-        gradient = "linear-gradient(#94FAF0 , #31D1D0)"
-
-        generate_count_bar("labeled", labeled_count, total_count, gradient)
+        generate_labeled_count_bar(mask_label_frame)
 
     # # Create buttons for each cell
     cell_types = ["WBC", "RBC", "PLT", "AGG", "OOF"]
@@ -439,54 +494,15 @@ else:
     for cell_type, col in zip(cell_types, columns):
         styled_button(col, cell_type, df, csv_path, mask_path)
 
-    mask_label = pd.read_csv(csv_path)
-
-    label_counts = mask_label['label'].value_counts()
-
-    complete_label_counts = pd.Series(0, index=labels)
-    complete_label_counts = complete_label_counts.add(
-        label_counts, fill_value=0)
-
-    # save the mask + Label data to npy file
-    combined_data = labeled_mask(mask_path, csv_path)
-    npy_file = f'{SAVE_ROOT_PATH}/{image_name}/{image_name}.npy'
-    np.save(npy_file, combined_data)
-
-    # save_boxes_from_npy(user_folder, npy_file)
-
-    add_vertical_space(2)
-    ###########################################################################
-
-    # Bar chart
-
-    # initial data
-    data = complete_label_counts.reset_index()
-    data.columns = ['Label', 'Count']
-    df_count = data['Count']
-    wbc_count = data.loc[data['Label'] == 'WBC', 'Count'].iloc[0]
-    rbc_count = data.loc[data['Label'] == 'RBC', 'Count'].iloc[0]
-    plt_count = data.loc[data['Label'] == 'PLT', 'Count'].iloc[0]
-    agg_count = data.loc[data['Label'] == 'AGG', 'Count'].iloc[0]
-    oof_count = data.loc[data['Label'] == 'OOF', 'Count'].iloc[0]
-
-    generate_progress_bar(
-        "WBC", df_count, wbc_count, "linear-gradient(to right, #a0a5b9 0%, #cfd9df 100%)")
-    generate_progress_bar(
-        'RBC', df_count, rbc_count, "linear-gradient(to right, #e3e7eb, #cfd9df)")
-    generate_progress_bar(
-        'PLT', df_count, plt_count, "linear-gradient(to right, #cfd9df, #a0a5b9)")
-    generate_progress_bar(
-        'AGG', df_count, agg_count, "linear-gradient(to right, #a0a5b9, #e3e7eb)")
-    generate_progress_bar(
-        'OOF', df_count, oof_count, "linear-gradient(to right, #cfd9df, #a0a5b9)")
-
+    # generate progressbar and their counter --> bar chart
+    process_labels_and_generate_bars(mask_label_frame, mask_path, csv_path, image_name, labels)
 
 ###############################################################
 
 
 # Create three columns
 # col1, col2, col3 = st.columns([2, 2, 1])
-if st.sidebar.button("🤙🏻 Summit"):
-    merge_csv('labeled_mask')
+if st.sidebar.button("🤙🏻 Submit"):
+    # merge_csv('labeled_mask')
 
     switch_page("Classification")
