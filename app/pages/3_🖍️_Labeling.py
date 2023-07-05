@@ -11,7 +11,7 @@ from streamlit_extras.no_default_selectbox import selectbox
 from css_style import generate_progress_bar, generate_count_bar
 
 from streamlit_image_coordinates import streamlit_image_coordinates
-from username_util import handle_username, create_directory_if_not_exists
+# from username_util import handle_username, create_directory_if_not_exists
 
 from PIL import Image, ImageDraw
 import os
@@ -30,6 +30,9 @@ hide_menu_style = """
         </style>
         """
 st.markdown(hide_menu_style, unsafe_allow_html=True)
+
+from detection import save_boxes_from_npy
+from config import USER_FOLDER_PATH, SAVE_ROOT_PATH
 
 
 def delete_file(file_path):
@@ -77,7 +80,7 @@ def is_point_in_mask(point, mask):
         return False
 
 
-def change_label(mask, new_label, df, csv_path, mask_name):
+def change_label(mask, new_label, df, csv_path, mask_path):
     """Change the label of the given mask to the new label and save the changes to a CSV file."""
     # Find the index of the row that corresponds to the given mask
     mask_index = None
@@ -91,13 +94,13 @@ def change_label(mask, new_label, df, csv_path, mask_name):
 
     # Save the DataFrame back to the CSV file
     df.to_csv(csv_path, index=False)
-    # labeled_mask(mask_name, csv_path)
+    # labeled_mask(mask_path, csv_path)
 
 
 @st.cache_data
-def labeled_mask(mask_name, csv_name):
+def labeled_mask(mask_path, csv_name):
     # Read the pickle file
-    with open(mask_name, 'rb') as f:
+    with open(mask_path, 'rb') as f:
         masks = pickle.load(f)
 
     # Load the CSV data
@@ -122,7 +125,10 @@ def labeled_mask(mask_name, csv_name):
 
     return combined_data
 
-def styled_button(col, label, df, csv_path, mask_name):
+# @st.cache_data
+
+
+def styled_button(_col, label, df, csv_path, mask_path):
     """Create a styled button. When the button is clicked, change the label of the highlighted cell to the button's label."""
     # If the current button label matches the last clicked button label, turn it green
     if st.session_state.get("last_clicked_button") == label:
@@ -146,7 +152,7 @@ def styled_button(col, label, df, csv_path, mask_name):
         st.session_state['last_clicked_button'] = label
         # Pass the label as a string
         change_label(st.session_state["selected_mask"], str(
-            label), df, csv_path, mask_name)
+            label), df, csv_path, mask_path)
 
         # Reset the selected mask
         st.session_state["selected_mask"] = None
@@ -182,7 +188,7 @@ def merge_csv(directory):
 
 
 @st.cache_data
-def clear_column(csv_path, column_name, mask_name):
+def clear_column(csv_path, column_name, mask_path):
 
     # Load CSV into a DataFrame
     df = pd.read_csv(csv_path)
@@ -195,7 +201,7 @@ def clear_column(csv_path, column_name, mask_name):
 
     # df = pd.DataFrame(columns=['masks', 'label'])
 
-    st.session_state['df'] = load_data(mask_name)
+    st.session_state['df'] = load_data(mask_path)
 
 
 def apply_colored_masks(image_path, masks, labels, color_dict):
@@ -226,9 +232,9 @@ def apply_colored_masks(image_path, masks, labels, color_dict):
 
 
 @st.cache_data
-def load_data(mask_name):
+def load_data(mask_path):
     # Read the pickle file and create the DataFrame
-    with open(mask_name, 'rb') as f:
+    with open(mask_path, 'rb') as f:
         masks = pickle.load(f)
 
     mask_list = []
@@ -244,49 +250,60 @@ def load_data(mask_name):
 
     return df
 
+
 @st.cache_data
 def process_and_get_image_coordinates(box_img, masks_to_color, mask_labels, color_dict):
     img = apply_colored_masks(box_img, masks_to_color, mask_labels, color_dict)
     value = streamlit_image_coordinates(img)
     return value
 
+
+# @st.cache_data(experimental_allow_widgets=True)
+def get_image_data():
+    image_folder = f'{USER_FOLDER_PATH}/dataset/original_image/'
+    image_files = [f for f in os.listdir(
+        image_folder) if f.endswith((".png", ".jpg", ".jpeg"))]
+    selected_image = st.selectbox("Select an image", image_files)
+    image_name = os.path.splitext(selected_image)[0]
+    csv_path = f'{SAVE_ROOT_PATH}/{image_name}/{image_name}.csv'
+    mask_path = f'{SAVE_ROOT_PATH}/{image_name}/segmentation.pkl'
+    box_img = f'{SAVE_ROOT_PATH}/{image_name}/bbox.png'
+
+    return image_folder, image_name, selected_image, csv_path, mask_path, box_img
+
+def check_segmentation(mask_path, box_img, image_name):
+    if not os.path.isfile(mask_path) or not os.path.isfile(box_img):
+        st.warning(
+            f'The image {image_name} is not segmented, please run the segmentation.')
+        sys.exit('Program terminated.')
 ########################################################
-username = handle_username()
+# username = handle_username()
 
-# print(username)
-user_folder = f'./user_folders/{username}'
-create_directory_if_not_exists(user_folder)
+# # print(username)
+# user_folder = f'./user_folders/{username}'
+# # print(user_folder)
+# create_directory_if_not_exists(user_folder)
 
-# SAVE_ROOT_PATH = '/Volumes/group05/APP_test/dataset'
+# # SAVE_ROOT_PATH = '/Volumes/group05/APP_test/dataset'
 
-SAVE_ROOT_PATH = f'{user_folder}/dataset/sam'
+# USER_FOLDER_PATH = user_folder
+# SAVE_ROOT_PATH = f'{user_folder}/dataset/sam'
 
 # SAVE_ROOT_PATH = '/Volumes/group05/APP_test/dataset'
 
 
 with st.sidebar:
-    image_folder = f'{user_folder}/dataset/original_image/'
-    # uploaded_image = upload_image(image_folder)
 
-    image_files = [f for f in os.listdir(
-        image_folder) if f.endswith((".png", ".jpg", ".jpeg"))]
-    # Create a select list with image file options
-    selected_image = st.selectbox("Select an image", image_files)
-    image_name = os.path.splitext(selected_image)[0]
-    csv_path = f'{SAVE_ROOT_PATH}/{image_name}/{image_name}.csv'
-    mask_name = f'{SAVE_ROOT_PATH}/{image_name}/segmentation.pkl'
-    box_img = f'{SAVE_ROOT_PATH}/{image_name}/bbox.png'
-    if not os.path.isfile(mask_name) or not os.path.isfile(box_img):
-        st.warning(
-            f'The image {image_name} is not segmented, please run the segmentation.')
-        sys.exit('Program terminated.')
+    image_folder, image_name, selected_image, csv_path, mask_path, box_img = get_image_data()
+
+    check_segmentation(mask_path, box_img, image_name)
+
     # If this is the first time running, or if the selected image has changed, update the session state
     if 'selected_image' not in st.session_state or st.session_state['selected_image'] != selected_image:
         # update the selected image in the session state
         st.session_state['selected_image'] = selected_image
 
-        st.session_state['df'] = load_data(
-            mask_name)
+        st.session_state['df'] = load_data(mask_path)
 
     on = st_toggle_switch(
         label="Advance Setting",
@@ -312,20 +329,19 @@ with st.sidebar:
                 if not os.path.isfile(csv_path):
                     pass
                 else:
-                    clear_column(csv_path, 'label', mask_name)
+                    clear_column(csv_path, 'label', mask_path)
 
                 # st.session_state['df']=pd.DataFrame(columns=['masks', 'label'])
 
                 st.success("The cell label has been cleared.")
         delete_image(image_folder)
 
-# Construct the full path to the selected image
-image_path = os.path.join(image_folder, selected_image)
+
 
 if "points" not in st.session_state:
     st.session_state["points"] = []
 if "selected_mask" not in st.session_state:
-    st.session_state["selected_mask"] = None
+    st.session_state["selected_mask"] = []
 
 
 df = st.session_state['df']
@@ -421,7 +437,7 @@ else:
     cell_types = ["WBC", "RBC", "PLT", "AGG", "OOF"]
     columns = st.columns(7)
     for cell_type, col in zip(cell_types, columns):
-        styled_button(col, cell_type, df, csv_path, mask_name)
+        styled_button(col, cell_type, df, csv_path, mask_path)
 
     mask_label = pd.read_csv(csv_path)
 
@@ -432,11 +448,9 @@ else:
         label_counts, fill_value=0)
 
     # save the mask + Label data to npy file
-    combined_data = labeled_mask(mask_name, csv_path)
+    combined_data = labeled_mask(mask_path, csv_path)
     npy_file = f'{SAVE_ROOT_PATH}/{image_name}/{image_name}.npy'
     np.save(npy_file, combined_data)
-
-    from detection import save_boxes_from_npy
 
     # save_boxes_from_npy(user_folder, npy_file)
 
