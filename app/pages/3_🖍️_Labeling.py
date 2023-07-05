@@ -260,19 +260,39 @@ def load_data(mask_path):
 
 
 # @st.cache_data(experimental_allow_widgets=True)
-def get_image_data():
-    image_folder = f'{USER_FOLDER_PATH}/dataset/original/'
+# def get_image_data():
+#     image_folder = f'{USER_FOLDER_PATH}/dataset/original/'
     
-    image_files = [f for f in os.listdir(
-        image_folder) if f.endswith((".png", ".jpg", ".jpeg"))]
+#     image_files = [f for f in os.listdir(
+#         image_folder) if f.endswith((".png", ".jpg", ".jpeg"))]
+#     selected_image = st.selectbox("Select an image", image_files)
+#     image_name = os.path.splitext(selected_image)[0]
+#     csv_path = f'{SAVE_ROOT_PATH}/{image_name}/{image_name}.csv'
+#     mask_path = f'{SAVE_ROOT_PATH}/{image_name}/segmentation.pkl'
+#     box_img = f'{SAVE_ROOT_PATH}/{image_name}/bbox.png'
+
+#     return image_folder, image_name, selected_image, csv_path, mask_path, box_img
+
+def get_image_files(user_folder):
+    image_folder = f'{user_folder}/dataset/original/'
+    if not os.path.exists(image_folder):
+        st.error(f"The folder {image_folder} does not exist.")
+        return None, None
+    image_files = [f for f in os.listdir(image_folder) if f.endswith((".png", ".jpg", ".jpeg"))]
+    if not image_files:
+        st.warning(f"There are no image files in the folder {image_folder}.")
+    return image_folder, image_files
+
+def select_image(image_files):
     selected_image = st.selectbox("Select an image", image_files)
-    image_name = os.path.splitext(selected_image)[0]
+    return selected_image
+
+@st.cache_data
+def construct_file_paths(user_folder, image_name):
     csv_path = f'{SAVE_ROOT_PATH}/{image_name}/{image_name}.csv'
     mask_path = f'{SAVE_ROOT_PATH}/{image_name}/segmentation.pkl'
     box_img = f'{SAVE_ROOT_PATH}/{image_name}/bbox.png'
-
-    return image_folder, image_name, selected_image, csv_path, mask_path, box_img
-
+    return csv_path, mask_path, box_img
 
 @st.cache_data
 def check_segmentation(mask_path, box_img, image_name):
@@ -379,7 +399,11 @@ def process_labels_and_generate_bars(mask_label_frame, mask_path, csv_path, imag
 
 with st.sidebar:
     # print(USER_FOLDER_PATH)
-    image_folder, image_name, selected_image, csv_path, mask_path, box_img = get_image_data()
+    user_folder = USER_FOLDER_PATH
+    image_folder, image_files = get_image_files(user_folder)
+    selected_image = select_image(image_files)
+    image_name = os.path.splitext(selected_image)[0]
+    csv_path, mask_path, box_img = construct_file_paths(user_folder, image_name)
 
     check_segmentation(mask_path, box_img, image_name)
 
