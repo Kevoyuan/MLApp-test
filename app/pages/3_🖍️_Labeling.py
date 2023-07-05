@@ -87,8 +87,18 @@ def is_point_in_mask(point, mask):
         return False
 
 
-def change_label(mask, new_label, df, csv_path, mask_path):
-    """Change the label of the given mask to the new label and save the changes to a CSV file."""
+def change_label(mask, new_label, df, csv_path):
+    """
+    Change the label of a mask in a DataFrame.
+
+    Parameters:
+    df (pandas.DataFrame): The DataFrame containing the mask labels.
+    mask (numpy.array): The mask whose label should be changed.
+    new_label (str): The new label for the mask.
+
+    Returns:
+    pandas.DataFrame: The DataFrame with the mask's label changed.
+    """
     # Find the index of the row that corresponds to the given mask
     mask_index = None
     for i, row_mask in enumerate(df['masks']):
@@ -135,7 +145,7 @@ def labeled_mask(mask_path, csv_name):
 # @st.cache_data
 
 
-def styled_button(_col, label, df, csv_path, mask_path):
+def styled_button(_col, label, df, csv_path):
     """Create a styled button. When the button is clicked, change the label of the highlighted cell to the button's label."""
     # If the current button label matches the last clicked button label, turn it green
     if st.session_state.get("last_clicked_button") == label:
@@ -159,7 +169,7 @@ def styled_button(_col, label, df, csv_path, mask_path):
         st.session_state['last_clicked_button'] = label
         # Pass the label as a string
         change_label(st.session_state["selected_mask"], str(
-            label), df, csv_path, mask_path)
+            label), df, csv_path)
 
         # Reset the selected mask
         st.session_state["selected_mask"] = None
@@ -212,6 +222,18 @@ def clear_column(csv_path, column_name, mask_path):
 
 # @st.cache_data
 def apply_colored_masks(image_path, masks, labels, color_dict):
+    """
+    Apply colored masks to an image.
+
+    Parameters:
+    image_path (str): The path to the image file.
+    masks (list): A list of masks to apply.
+    labels (list): A list of labels corresponding to the masks.
+    color_dict (dict): A dictionary mapping labels to colors.
+
+    Returns:
+    PIL.Image: The image with the masks applied.
+    """
     with Image.open(image_path) as img:
         img = img.convert('RGB')
         for idx, mask in enumerate(masks):
@@ -516,7 +538,7 @@ else:
     cell_types = ["WBC", "RBC", "PLT", "AGG", "OOF"]
     columns = st.columns(7)
     for cell_type, col in zip(cell_types, columns):
-        styled_button(col, cell_type, df, csv_path, mask_path)
+        styled_button(col, cell_type, df, csv_path)
 
     # generate progressbar and their counter --> bar chart
     process_labels_and_generate_bars(mask_label_frame, mask_path, csv_path, image_name, labels)
