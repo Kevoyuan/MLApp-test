@@ -4,7 +4,6 @@ import numpy as np
 from streamlit_toggle import st_toggle_switch
 import shutil
 import sys
-
 import streamlit as st
 from streamlit_extras.add_vertical_space import add_vertical_space
 from streamlit_extras.switch_page_button import switch_page
@@ -14,9 +13,10 @@ from streamlit_image_coordinates import streamlit_image_coordinates
 from PIL import Image, ImageDraw
 import os
 import pandas as pd
-from user_util import get_directory_size, create_directory_if_not_exists
-from config import USER_FOLDER_PATH, SAVE_ROOT_PATH
-from page_config import login_statement
+from setup.user_util import get_directory_size, create_directory_if_not_exists
+from setup.page_config import login_statement
+from setup.user_folder_config import USER_FOLDER_PATH, SAVE_ROOT_PATH
+
 from detection import save_boxes_from_npy
 
 
@@ -132,6 +132,8 @@ def change_label(mask, new_label, df, csv_path):
     # Save the DataFrame back to the CSV file
     df.to_csv(csv_path, index=False)
     # labeled_mask(mask_path, csv_path)
+    # st.session_state['df'] = df
+    return df
 
 
 @st.cache_data
@@ -198,9 +200,9 @@ def styled_button(_col, label, df, csv_path):
     if button_clicked and st.session_state["selected_mask"] is not None:
         st.session_state['last_clicked_button'] = label
         # Pass the label as a string
-        change_label(st.session_state["selected_mask"], str(
+        df = change_label(st.session_state["selected_mask"], str(
             label), df, csv_path)
-
+        st.session_state['df'] = df
         # Reset the selected mask
         st.session_state["selected_mask"] = None
         st.experimental_rerun()
@@ -210,28 +212,28 @@ def styled_button(_col, label, df, csv_path):
         st.session_state['last_clicked_button'] = None
 
 
-@st.cache_data
-def merge_csv(directory):
-    # Use os.listdir to get all files in the directory
-    all_files = os.listdir(directory)
+# @st.cache_data
+# def merge_csv(directory):
+#     # Use os.listdir to get all files in the directory
+#     all_files = os.listdir(directory)
 
-    # Filter the list down to only csv files
-    csv_files = [file for file in all_files if file.endswith('.csv')]
+#     # Filter the list down to only csv files
+#     csv_files = [file for file in all_files if file.endswith('.csv')]
 
-    # Initialize an empty list to hold dataframes
-    df_list = []
+#     # Initialize an empty list to hold dataframes
+#     df_list = []
 
-    # Loop over all csv files and read each one into a pandas DataFrame
-    for file in csv_files:
-        path = os.path.join(directory, file)  # Get full path to the CSV file
-        df = pd.read_csv(path)
-        df_list.append(df)
+#     # Loop over all csv files and read each one into a pandas DataFrame
+#     for file in csv_files:
+#         path = os.path.join(directory, file)  # Get full path to the CSV file
+#         df = pd.read_csv(path)
+#         df_list.append(df)
 
-    # Concatenate all the dataframes together
-    merged_df = pd.concat(df_list)
+#     # Concatenate all the dataframes together
+#     merged_df = pd.concat(df_list)
 
-    # Save the merged dataframe to a new csv file
-    merged_df.to_csv('labeled_mask/merged.csv', index=False)
+#     # Save the merged dataframe to a new csv file
+#     merged_df.to_csv('labeled_mask/merged.csv', index=False)
 
 
 # @st.cache_data
@@ -449,7 +451,7 @@ def generate_labeled_count_bar(mask_label_df):
 
     generate_count_bar("labeled", labeled_count, total_count, gradient)
 
-
+@st.cache_resource(show_spinner=False)
 def process_labels_and_generate_bars(mask_label_df, mask_path, csv_path, image_name, labels):
     label_counts = mask_label_df['label'].value_counts()
 
