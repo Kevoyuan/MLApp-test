@@ -1,55 +1,23 @@
 import streamlit as st
+from page_config import login_statement
 from streamlit_option_menu import option_menu
 from streamlit_toggle import st_toggle_switch
 from streamlit_extras.switch_page_button import switch_page
 from streamlit_extras.add_vertical_space import add_vertical_space
+from css_style import generate_menu_styles
+# import classification.generic_classifer as generic
+# from classification.dataset import WbcDataset
+import json
+from config import USER_FOLDER_PATH, SAVE_ROOT_PATH
 
-st.set_page_config(
-    page_title="AMI05",
-    page_icon="🎯",
-    # layout="wide"
-)
-classifier = option_menu('Classification Model', ['KNN', 'SVC', 'Random Forest', 'MLP', 'VAE'],
+with st.sidebar:
+    login_statement()
+
+
+classifier = option_menu('', ['KNN', 'SVC', 'Random Forest', 'MLP', 'VAE'],
                          icons=['-', '-', '-', '-', '-'],
-                         menu_icon="bi bi-diagram-3-fill", default_index=0, orientation="horizontal",
-                         styles={
-    "container": {
-        "padding": "0!important",
-        "background-color": '#FFFFFF',  # lighter grey color for macOS-like appearance
-        "text-align": "center",
-        "display": "flex",
-        "justify-content": "space-around",
-        "align-items": "left",
-        "list-style-type": "none",
-        "margin": "0"
-    },
-    "menu-title": {
-        "color": "#333333",
-        "font-weight": "bold"
-
-    },
-    "nav-link": {
-        "font-size": "15px",
-        "text-align": "center",
-        # "margin":"30px",
-        "--hover-color": "#90c5ff",
-        "color": "#333333",
-        "font-weight": "100",
-        "text-decoration": "none",
-        "transition": "1s",
-        "font-weight": "700"
-
-
-    },
-    "nav-link-selected": {
-        "background-color": 'white',
-        "text-decoration": "underline",
-        "font-weight": "700",
-        # "color": "white",
-
-    }
-}
-)
+                         menu_icon="-", default_index=0, orientation="horizontal",
+                         styles=generate_menu_styles())
 
 
 if classifier == 'KNN':
@@ -67,7 +35,7 @@ if classifier == 'KNN':
 
     with col2:
         weights = st.selectbox('weights', ('uniform', 'distance'))
-        metric = st.selectbox('metric', ('l1', 'l2'),index=1)
+        metric = st.selectbox('metric', ('l1', 'l2'), index=1)
 
     knn_params = {
         "n_neighbors": n_neighbors,
@@ -86,7 +54,7 @@ elif classifier == "SVC":
 
     with col2:
         kernel = st.selectbox(
-            'kernel', ('rbf', 'linear', 'sigmoid', 'precomputed'),index=0)
+            'kernel', ('rbf', 'linear', 'sigmoid', 'precomputed'), index=0)
 
     col1, col2 = st.columns(2)
 
@@ -122,13 +90,13 @@ elif classifier == "MLP":
     with col1:
         hidden_layer_sizes = st.slider(
             'hidden_layer_sizes', min_value=1, max_value=100, value=50)
-        solver = st.selectbox('solver', ('lbfgs', 'sgd', 'adam'),index=2)
+        solver = st.selectbox('solver', ('lbfgs', 'sgd', 'adam'), index=2)
         learning_rate = st.selectbox(
             'learning_rate', ('constant', 'invscaling', 'adaptive'))
 
     with col2:
         activation = st.selectbox(
-            'activation', ('identity', 'logistic', 'tanh', 'relu'),index=3)
+            'activation', ('identity', 'logistic', 'tanh', 'relu'), index=3)
         alpha = st.number_input('alpha', value=1e-4, format="%.4f")
         learning_rate_init = st.select_slider('learning_rate_init', options=[
                                               '0.0001', '0.0005', '0.001', '0.005', '0.01', '0.05', '0.1'])
@@ -148,37 +116,36 @@ elif classifier == "VAE":
     col1, col2 = st.columns(2)
     with col1:
 
-        max_epoch = st.select_slider('max_epoch', options=[8, 16, 32, 64])
-        batch_size = st.slider('max_epoch', min_value=20,
+        batch_size = st.select_slider('batch_size', options=[8, 16, 32, 64])
+        max_epoch = st.slider('max_epoch', min_value=20,
                                max_value=100, value=100)
         activation = st.selectbox(
-            'activation', ('identity', 'logistic', 'tanh', 'relu'),index=3)
-        alpha = st.number_input('alpha', value=1e-4, format="%.4f")
+            'activation', ('identity', 'logistic', 'tanh', 'relu'), index=3)
+        # alpha = st.number_input('alpha', value=1e-4, format="%.4f")
         learning_rate_init = st.select_slider('learning_rate_init', options=[
-                                              '0.0001', '0.0005', '0.001', '0.005', '0.01', '0.05', '0.1'])
+                                              0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1])
 
-        solver = st.selectbox('solver', ('lbfgs', 'sgd', 'adam'),index=2)
+        solver = st.selectbox('solver', ('lbfgs', 'sgd', 'adam'), index=2)
         learning_rate = st.selectbox(
-            'learning_rate', ('constant', 'invscaling', 'adaptive'),index=0)
+            'learning_rate', ('constant', 'invscaling', 'adaptive'), index=0)
 
     with col2:
         hidden_layers = st.slider(
-            'hidden_layers', min_value=1, max_value=3, value=2)
+            'hidden_layer_num', min_value=1, max_value=3, value=2)
 
         hidden_layer_sizes = []
         for i in range(hidden_layers):
-            size = st.slider(
-                f'Size of hidden layer {i+1}', min_value=1, max_value=100, value=50)
+            size = st.select_slider(
+                f'Size of hidden layer {i+1}', options=[8, 16, 32, 64, 128], value=64)
             hidden_layer_sizes.append(size)
 
     vae_params = {
-        'hidden_layers': hidden_layers,
-        "hidden_layer_sizes": tuple(hidden_layer_sizes),
+        'hidden_layer_num': hidden_layers,
+        "hidden_layer_sizes": hidden_layer_sizes,
         'max_epoch': max_epoch,
         'batch_size': batch_size,
         'activation': activation,
         'solver': solver,
-        'alpha': alpha,
         'learning_rate': learning_rate,
         'learning_rate_init': learning_rate_init
     }
@@ -197,6 +164,8 @@ if classifier == 'VAE':
 
 
 with st.sidebar:
+    
+    
     on = st_toggle_switch(
         label="Hyperparameters Preview",
         key="switch_1",
@@ -211,15 +180,26 @@ with st.sidebar:
 
         st.write(selected_classifier_dict)
 
-
-# if col1.button("🙈 Preview"):
-# st.write('Preview of the classifier:')
-
-# st.write(selected_classifier)
-# Add your training code/ function here!
 add_vertical_space(3)
 col1, col2, col3 = st.columns([2, 2, 1])
 
-if col2.button("🙈 Training!"):
+if col2.button("🙈 Pretrain!"):
+    ## The pretrain function here! 
+    clf = generic.Classifier_cells(classifier, **selected_classifier_dict)
+    # Split dataset
+    labeled_path = f'{USER_FOLDER_PATH}/dataset/labeled'
+    if classifier == "VAE":
+        dataset_train = WbcDataset(dir=labeled_path, split='train', transform=None, download=False, need_label=True, resize=True)
+        dataset_test = WbcDataset(dir=labeled_path, split='test', transform=None, download=False, need_label=True, resize=True)
+    else:
+        dataset_train = WbcDataset(dir=labeled_path, split='train', transform=None, download=False, need_label=True, resize=False)
+        dataset_test = WbcDataset(dir=labeled_path, split='test', transform=None, download=False, need_label=True, resize=False)
 
+    # Training
+    X, y = dataset_train.create_X_y()
+    clf.fit(X, y)
+    # Testing
+    X, y = dataset_test.create_X_y()
+    # Accuracy
+    print(clf.score(X, y))
     switch_page("ActiveLearning")
