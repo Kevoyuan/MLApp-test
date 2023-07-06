@@ -10,32 +10,26 @@ from streamlit_extras.add_vertical_space import add_vertical_space
 from streamlit_extras.switch_page_button import switch_page
 from streamlit_extras.no_default_selectbox import selectbox
 from css_style import generate_progress_bar, generate_count_bar
-
 from streamlit_image_coordinates import streamlit_image_coordinates
-
 from PIL import Image, ImageDraw
 import os
 import pandas as pd
-
-st.set_page_config(
-    page_title="AMI05",
-    page_icon="🎯",
-    # layout="wide"
-)
-
-hide_menu_style = """
-        <style>
-        #MainMenu {visibility: hidden; }
-        footer {visibility: hidden;}
-        </style>
-        """
-st.markdown(hide_menu_style, unsafe_allow_html=True)
 from user_util import get_directory_size, create_directory_if_not_exists
 from config import USER_FOLDER_PATH, SAVE_ROOT_PATH
+from page_config import login_statement
 from detection import save_boxes_from_npy
 
+
 def delete_file(file_path):
-    """Delete a file at the given path."""
+    """
+    Delete a file at the given path.
+
+    Parameters:
+    file_path (str): The path to the file to be deleted.
+
+    Returns:
+    None
+    """
     if os.path.isfile(file_path):
         os.remove(file_path)
         st.success("File removed successfully.")
@@ -44,13 +38,29 @@ def delete_file(file_path):
 
 
 def delete_folder(folder_path):
-    """Delete a folder at a specified path."""
+    """
+    Delete a folder at a specified path.
+
+    Parameters:
+    folder_path (str): The path to the folder to be deleted.
+
+    Returns:
+    None
+    """
     if os.path.exists(folder_path):
         shutil.rmtree(folder_path)
 
 
 def delete_image(image_folder):
-    """Allow users to delete an image from the image folder."""
+    """
+    Allow users to delete an image from the image folder.
+
+    Parameters:
+    image_folder (str): The path to the image folder.
+
+    Returns:
+    None
+    """
 
     # List all image files in the directory
     image_files = [f for f in os.listdir(
@@ -63,7 +73,8 @@ def delete_image(image_folder):
         print(f"image_name: {selected_image_name}")
 
     if selected_image is not None:
-        folder_size = get_directory_size(f'{SAVE_ROOT_PATH}/{selected_image_name}')
+        folder_size = get_directory_size(
+            f'{SAVE_ROOT_PATH}/{selected_image_name}')
         st.write(
             f"The image folder \"{selected_image_name}\" is {folder_size / (1024 * 1024):.2f} MB")
         # Delete the selected image
@@ -73,11 +84,19 @@ def delete_image(image_folder):
             delete_file(image_path)
             # delete_file(f'labeled_mask/{image_name}.csv')
             delete_folder(f'{SAVE_ROOT_PATH}/{selected_image_name}')
-            
 
 
 def is_point_in_mask(point, mask):
-    """Check if a point is in a mask."""
+    """
+    Check if a point is in a mask.
+
+    Parameters:
+    point (tuple): The point to be checked.
+    mask (numpy.array): The mask in which to check the point.
+
+    Returns:
+    bool: True if the point is in the mask, False otherwise.
+    """
     x, y = point
     height = len(mask)
     width = len(mask[0]) if height > 0 else 0
@@ -92,9 +111,10 @@ def change_label(mask, new_label, df, csv_path):
     Change the label of a mask in a DataFrame.
 
     Parameters:
-    df (pandas.DataFrame): The DataFrame containing the mask labels.
     mask (numpy.array): The mask whose label should be changed.
     new_label (str): The new label for the mask.
+    df (pandas.DataFrame): The DataFrame containing the mask labels.
+    csv_path (str): The path to the CSV file.
 
     Returns:
     pandas.DataFrame: The DataFrame with the mask's label changed.
@@ -146,8 +166,18 @@ def labeled_mask(mask_path, csv_name):
 
 
 def styled_button(_col, label, df, csv_path):
-    """Create a styled button. When the button is clicked, change the label of the highlighted cell to the button's label."""
-    # If the current button label matches the last clicked button label, turn it green
+    """
+    Create a styled button. When the button is clicked, changes the label of the highlighted cell to the button's label.
+
+    Parameters:
+    label (str): The label for the button.
+    active_color (str): The color of the button when active.
+    inactive_color (str): The color of the button when inactive.
+    button_clicked (bool): Whether the button has been clicked.
+
+    Returns:
+    bool: Whether the button has been clicked.
+    """    # If the current button label matches the last clicked button label, turn it green
     if st.session_state.get("last_clicked_button") == label:
         button_color = '🐤'  # green
     # If the current button's label matches the label of the point in the image that was last clicked, turn it green
@@ -206,7 +236,17 @@ def merge_csv(directory):
 
 # @st.cache_data
 def clear_column(csv_path, column_name, mask_path):
+    """
+    Clear a specific column in a CSV file and remove corresponding mask files.
 
+    Parameters:
+    csv_path (str): The path to the CSV file.
+    column_name (str): The name of the column to be cleared.
+    mask_path (str): The path to the directory containing the mask files.
+
+    Returns:
+    None
+    """
     # Load CSV into a DataFrame
     df = pd.read_csv(csv_path)
 
@@ -221,6 +261,8 @@ def clear_column(csv_path, column_name, mask_path):
     st.session_state['df'] = load_data(mask_path)
 
 # @st.cache_data
+
+
 def apply_colored_masks(image_path, masks, labels, color_dict):
     """
     Apply colored masks to an image.
@@ -280,34 +322,46 @@ def load_data(mask_path):
     return df
 
 
-
-# @st.cache_data(experimental_allow_widgets=True)
-# def get_image_data():
-#     image_folder = f'{USER_FOLDER_PATH}/dataset/original/'
-    
-#     image_files = [f for f in os.listdir(
-#         image_folder) if f.endswith((".png", ".jpg", ".jpeg"))]
-#     selected_image = st.selectbox("Select an image", image_files)
-#     image_name = os.path.splitext(selected_image)[0]
-#     csv_path = f'{SAVE_ROOT_PATH}/{image_name}/{image_name}.csv'
-#     mask_path = f'{SAVE_ROOT_PATH}/{image_name}/segmentation.pkl'
-#     box_img = f'{SAVE_ROOT_PATH}/{image_name}/bbox.png'
-
-#     return image_folder, image_name, selected_image, csv_path, mask_path, box_img
-
 def get_image_files(user_folder):
+    """
+    Get all image files in a user's folder.
+
+    This function looks for all files in the 'dataset/original/' subdirectory
+    of the specified user folder that have a .png, .jpg, or .jpeg extension.
+    If the image folder does not exist, an error message is displayed.
+    If there are no image files in the folder, a warning message is displayed.
+
+    Parameters:
+    user_folder (str): The path to the user's folder.
+
+    Returns:
+    tuple: A tuple containing the path to the image folder and a list of image files.
+           If the image folder does not exist or there are no image files, returns (None, None).
+    """
     image_folder = f'{user_folder}/dataset/original/'
     if not os.path.exists(image_folder):
         st.error(f"The folder {image_folder} does not exist.")
         return None, None
-    image_files = [f for f in os.listdir(image_folder) if f.endswith((".png", ".jpg", ".jpeg"))]
+    image_files = [f for f in os.listdir(
+        image_folder) if f.endswith((".png", ".jpg", ".jpeg"))]
     if not image_files:
         st.warning(f"There are no image files in the folder {image_folder}.")
     return image_folder, image_files
 
+
 def select_image(image_files):
+    """
+    Allow users to select an image from the image folder.
+
+    Parameters:
+    image_folder (str): The path to the image folder.
+
+    Returns:
+    str: The path to the selected image.
+    """
     selected_image = st.selectbox("Select an image", image_files)
     return selected_image
+
 
 @st.cache_data
 def construct_file_paths(user_folder, image_name):
@@ -315,6 +369,7 @@ def construct_file_paths(user_folder, image_name):
     mask_path = f'{SAVE_ROOT_PATH}/{image_name}/segmentation.pkl'
     box_img = f'{SAVE_ROOT_PATH}/{image_name}/bbox.png'
     return csv_path, mask_path, box_img
+
 
 @st.cache_data
 def check_segmentation(mask_path, box_img, image_name):
@@ -324,25 +379,53 @@ def check_segmentation(mask_path, box_img, image_name):
         sys.exit('Program terminated.')
 
 
-def get_or_create_mask_label_frame(csv_path):
+def get_or_create_mask_label_df(csv_path):
+    """
+    Get or create a DataFrame for mask labels.
+
+    This function checks if a CSV file exists at the given path. If the file exists, 
+    it is read into a DataFrame. If the file does not exist, a new DataFrame is created 
+    with columns for 'masks' and 'label', and this DataFrame is saved as a CSV file at 
+    the given path.
+
+    Parameters:
+    csv_path (str): The path to the CSV file.
+
+    Returns:
+    pandas.DataFrame: A DataFrame containing mask labels.
+    """
     # Check if the csv file exists
     if not os.path.isfile(csv_path):
         # If the file doesn't exist, create a new DataFrame with the appropriate columns
-        mask_label_frame = pd.DataFrame(columns=['masks', 'label'])
+        mask_label_df = pd.DataFrame(columns=['masks', 'label'])
         # Save the DataFrame as a CSV file
-        mask_label_frame.to_csv(csv_path, index=False)
+        mask_label_df.to_csv(csv_path, index=False)
     else:
         # If the file exists, read it
-        mask_label_frame = pd.read_csv(csv_path)
+        mask_label_df = pd.read_csv(csv_path)
 
-    return mask_label_frame
+    return mask_label_df
 
 
-def process_point(value, label_lists, df):
+def process_point(coordinates, label_lists, df):
+    """
+    Process a point and update the session state.
+
+    This function checks if a point is within any of the masks in label_lists.
+    If the point is within a mask, the mask and DataFrame are added to the session state.
+
+    Parameters:
+    coordinates (dict): A dictionary containing the x and y coordinates of the point.
+    label_lists (dict): A dictionary where the keys are labels and the values are lists of masks.
+    df (pandas.DataFrame): The DataFrame to be added to the session state if the point is in a mask.
+
+    Returns:
+    None
+    """
     # initial point coordinate
     point = 0, 0
-    if value is not None:
-        point = value["x"], value["y"]
+    if coordinates is not None:
+        point = coordinates["x"], coordinates["y"]
         st.session_state["points"].append(point)
 
         for label, masks in label_lists.items():
@@ -353,31 +436,33 @@ def process_point(value, label_lists, df):
                     break
 
 
-def generate_labeled_count_bar(mask_label_frame):
+def generate_labeled_count_bar(mask_label_df):
     # count of unlabeled masks
-    unlabeled_count = mask_label_frame['label'].isna().sum()
-    labeled_count = mask_label_frame['label'].value_counts().sum()
+    unlabeled_count = mask_label_df['label'].isna().sum()
+    labeled_count = mask_label_df['label'].value_counts().sum()
 
     # st.write(labeled_count)
-    total_count = len(mask_label_frame)  # total count of masks
+    total_count = len(mask_label_df)  # total count of masks
 
     # example gradient
     gradient = "linear-gradient(#94FAF0 , #31D1D0)"
 
     generate_count_bar("labeled", labeled_count, total_count, gradient)
 
-def process_labels_and_generate_bars(mask_label_frame, mask_path, csv_path, image_name, labels):
-    label_counts = mask_label_frame['label'].value_counts()
+
+def process_labels_and_generate_bars(mask_label_df, mask_path, csv_path, image_name, labels):
+    label_counts = mask_label_df['label'].value_counts()
 
     complete_label_counts = pd.Series(0, index=labels)
-    complete_label_counts = complete_label_counts.add(label_counts, fill_value=0)
+    complete_label_counts = complete_label_counts.add(
+        label_counts, fill_value=0)
 
     # save the mask + Label data to npy file
     combined_data = labeled_mask(mask_path, csv_path)
     npy_file = f'{SAVE_ROOT_PATH}/{image_name}/{image_name}.npy'
     np.save(npy_file, combined_data)
 
-    save_boxes_from_npy(dir='dataset',npy_file=f'{image_name}.npy')
+    save_boxes_from_npy(dir='dataset', npy_file=f'{image_name}.npy')
 
     # add_vertical_space(2)
     ###########################################################################
@@ -420,12 +505,13 @@ def process_labels_and_generate_bars(mask_label_frame, mask_path, csv_path, imag
 
 
 with st.sidebar:
-    # print(USER_FOLDER_PATH)
+    login_statement()
     user_folder = USER_FOLDER_PATH
     image_folder, image_files = get_image_files(user_folder)
     selected_image = select_image(image_files)
     image_name = os.path.splitext(selected_image)[0]
-    csv_path, mask_path, box_img = construct_file_paths(user_folder, image_name)
+    csv_path, mask_path, box_img = construct_file_paths(
+        user_folder, image_name)
 
     check_segmentation(mask_path, box_img, image_name)
 
@@ -499,7 +585,7 @@ else:
             label_lists[list_name] = masks
 
     # Check if the csv file exists and generate mask+label dataframe
-    mask_label_frame = get_or_create_mask_label_frame(csv_path)
+    mask_label_df = get_or_create_mask_label_df(csv_path)
 
     # Define a dictionary that maps labels to colors
     color_dict = {
@@ -510,7 +596,7 @@ else:
         'OOF': (128, 0, 128)     # Purple
     }
 
-    mask_labels = mask_label_frame['label']
+    mask_labels = mask_label_df['label']
     masks_to_color = df['masks']
 
     col1, col2 = st.columns([5, 1])
@@ -518,11 +604,11 @@ else:
     with col1:
         img = apply_colored_masks(
             box_img, masks_to_color, mask_labels, color_dict)
-        value = streamlit_image_coordinates(img)
+        coordinates = streamlit_image_coordinates(img)
 ############################################################################
 
     # initial point coordinate get the cursor point and its state
-    process_point(value, label_lists, df)
+    process_point(coordinates, label_lists, df)
 
     with st.sidebar:
         if on:
@@ -532,7 +618,7 @@ else:
     ############################################################################
 
     with col2:
-        generate_labeled_count_bar(mask_label_frame)
+        generate_labeled_count_bar(mask_label_df)
 
     # # Create buttons for each cell
     cell_types = ["WBC", "RBC", "PLT", "AGG", "OOF"]
@@ -541,7 +627,8 @@ else:
         styled_button(col, cell_type, df, csv_path)
 
     # generate progressbar and their counter --> bar chart
-    process_labels_and_generate_bars(mask_label_frame, mask_path, csv_path, image_name, labels)
+    process_labels_and_generate_bars(
+        mask_label_df, mask_path, csv_path, image_name, labels)
 
 ###############################################################
 
