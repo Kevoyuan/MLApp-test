@@ -5,10 +5,9 @@ from streamlit_extras.add_vertical_space import add_vertical_space
 from PIL import Image
 import os
 from streamlit_extras.switch_page_button import switch_page
-from css_style import generate_cork_board
-from user_util import create_directory_if_not_exists
-from page_config import login_statement
-from config import USER_FOLDER_PATH, SAVE_ROOT_PATH
+from css_style import generate_cork_board, custom_spinner
+from setup.user_util import create_directory_if_not_exists
+from setup.config import login_statement, user_folder_config
 
 
 def upload_images(image_folder):
@@ -65,10 +64,12 @@ def display_fact_on_board():
 # # SAVE_ROOT_PATH = '/Volumes/group05/APP_test/dataset'
 
 # SAVE_ROOT_PATH = f'{user_folder}/dataset/sam'
+USER_FOLDER_PATH, SAVE_ROOT_PATH = user_folder_config()
+user_folder = USER_FOLDER_PATH
+print(f"Segmentation: user_folder: {USER_FOLDER_PATH}\n")
+
 with st.sidebar:
     login_statement()
-
-user_folder = USER_FOLDER_PATH
 
 
 image_folder = f'{user_folder}/dataset/original/'
@@ -79,7 +80,7 @@ uploaded_image, image_paths = upload_images(image_folder)
 
 
 if not uploaded_image or not image_paths:
-    st.warning("Please upload images")
+    st.info("Please upload images")
 
 
 if uploaded_image:
@@ -100,11 +101,9 @@ if uploaded_image:
         display_fact_on_board()
 
         add_vertical_space(2)
-        with st.spinner('Wait for the cell detection...'):
+        with custom_spinner('Wait for the cell detection...'):
 
-            # style gradient
-            gradient = "linear-gradient(to right, #4cd964, #5ac8fa, #007aff, #34aadc, #5856d6, #ff2d55)"
-
+        
             total_images = len(image_paths)
             progress_placeholders = st.empty()
 
@@ -134,13 +133,13 @@ if uploaded_image:
                 col1, col2 = st.columns(2)
                 col1.image(image_path, caption='Orignal image')
                 col2.image(f"{SAVE_ROOT_PATH}/{dir}/bbox.png",
-                           caption='Segmented image')
+                        caption='Segmented image')
                 time.sleep(0.1)
+            
             time.sleep(1)
 
             st.success('Done!', icon="✅")
             # st.experimental_rerun()
 
-        if st.sidebar.button("🤙🏻 Submit"):
-
-            switch_page("Labeling")
+    if st.sidebar.button("🤙🏻 Submit"):
+        switch_page("labeling")
