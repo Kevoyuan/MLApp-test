@@ -1,0 +1,25 @@
+cookie:
+  expiry_days: 30
+  key: some_signature_key
+  name: some_cookie_name
+credentials:
+  usernames:
+    '123':
+      email: 2711088069@qq.com
+      name: '123'
+      password: $2b$12$dqII1xHa5nqmYlO75LP11OeHywiUJ0iS.5J0ia01iZZ2Jsy1Or61O
+    aaa:
+      email: aaa@a.com
+      name: aaa
+      password: $2b$12$5WJwFSZK75Yg0Czd7HFl1O2fsaFJgRJviaiqhAHZDprCkaq6hQQ7y
+    jsmith:
+      email: jsmith@gmail.com
+      name: John Smith
+      password: abc
+    rbriggs:
+      email: rbriggs@gmail.com
+      name: Rebecca Briggs
+      password: def
+preauthorized:
+  emails:
+  - melsby@gmail.com
