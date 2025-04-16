@@ -16,18 +16,6 @@ Explore our features, try out our system, and unlock new possibilities in cellul
 
 - [CellVision](#cellvision)
   - [Table of Contents](#table-of-contents)
-- [\<\<\<\<\<\<\< HEAD](#-head)
-  - [**New Functionality: Secure Registration**](#new-functionality-secure-registration)
-  - [Demo](#demo)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Usage](#usage)
-  - [Contributor](#contributor)
-  - [License](#license)
->>>>>>> refs/remotes/origin/test
-- [CellVision](#cellvision)
-  - [Table of Contents](#table-of-contents)
-- [\<\<\<\<\<\<\< HEAD](#-head)
   - [**New Functionality: Secure Registration**](#new-functionality-secure-registration)
   - [Demo](#demo)
   - [Prerequisites](#prerequisites)
@@ -37,13 +25,7 @@ Explore our features, try out our system, and unlock new possibilities in cellul
   - [License](#license)
 
 
-=======
-  - [Contact](#contact)
-  - [License](#license)
 
-
-
->>>>>>> refs/remotes/origin/test
 ## **New Functionality: Secure Registration**
 ⚡️ We are excited to announce a new update to CellVision! You can now register with your email, username, and password. This allows you to create an account and securely store your login information for future access.
 
