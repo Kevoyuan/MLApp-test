@@ -1,0 +1,37 @@
+# Core dependencies
+streamlit>=1.22.0
+numpy>=1.22.0
+pandas>=1.4.0
+matplotlib>=3.5.0
+seaborn>=0.11.0
+scikit-learn>=1.0.0
+scipy>=1.8.0
+pillow>=9.0.0
+
+# Image processing
+opencv-python>=4.5.0
+scikit-image>=0.19.0
+
+# Deep learning (PyTorch should be installed separately according to hardware)
+# torch>=1.12.0
+# torchvision>=0.13.0
+
+# Active learning
+modAL>=0.4.1
+
+# Visualization
+plotly>=5.8.0
+altair>=4.2.0
+
+# Data handling
+joblib>=1.1.0
+h5py>=3.6.0
+
+# Web app utilities
+streamlit-authenticator>=0.1.5
+streamlit-option-menu>=0.3.2
+streamlit-drawable-canvas>=0.9.0
+
+# Other utilities
+tqdm>=4.64.0
+pyyaml>=6.0

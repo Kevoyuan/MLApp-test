@@ -16,19 +16,24 @@ Explore our features, try out our system, and unlock new possibilities in cellul
 
 - [CellVision](#cellvision)
   - [Table of Contents](#table-of-contents)
-<<<<<<< HEAD
-=======
-    - [This project is currently hosted on the following website:](#this-project-is-currently-hosted-on-the-following-website)
-    - [For logging into the AMI domain:](#for-logging-into-the-ami-domain)
-      - [Note: You may need to use VPN if you are not under Munich Scientific Network](#note-you-may-need-to-use-vpn-if-you-are-not-under-munich-scientific-network)
->>>>>>> refs/remotes/origin/test
+- [\<\<\<\<\<\<\< HEAD](#-head)
   - [**New Functionality: Secure Registration**](#new-functionality-secure-registration)
   - [Demo](#demo)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
   - [Usage](#usage)
   - [Contributor](#contributor)
-<<<<<<< HEAD
+  - [License](#license)
+>>>>>>> refs/remotes/origin/test
+- [CellVision](#cellvision)
+  - [Table of Contents](#table-of-contents)
+- [\<\<\<\<\<\<\< HEAD](#-head)
+  - [**New Functionality: Secure Registration**](#new-functionality-secure-registration)
+  - [Demo](#demo)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Usage](#usage)
+  - [Contributor](#contributor)
   - [License](#license)
 
 
@@ -165,9 +170,5 @@ Zhengxuan Yuan, Yutong Xin, Lei Li, Fan Wang, Zihao Wang, Cheng Qian
 <span style="color:gray">(names not listed in order)</span>
 
 
-<<<<<<< HEAD
-
-=======
->>>>>>> refs/remotes/origin/test
 ## License
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) CellVision licensed under the MIT license.
