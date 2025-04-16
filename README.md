@@ -28,16 +28,7 @@ Explore our features, try out our system, and unlock new possibilities in cellul
   - [Contact](#contact)
   - [License](#license)
 
-### This project is currently hosted on the following website:
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://cellvision.group05.ami.dedyn.io/)
 
-### For logging into the AMI domain:
-#### Note: You may need to use VPN if you are not under Munich Scientific Network
-
-
-Username: ami
-
-Password: YmPAYeALIAnk
 
 ## **New Functionality: Secure Registration**
 ⚡️ We are excited to announce a new update to CellVision! You can now register with your email, username, and password. This allows you to create an account and securely store your login information for future access.
@@ -163,18 +154,6 @@ Happy data processing with the Applied Machine Intelligence web app!
 Zhengxuan Yuan, Yutong Xin, Lei Li, Fan Wang, Zihao Wang, Cheng Qian
 
 <span style="color:gray">(names not listed in order)</span>
-
-## Contact
-| Name          | Contact |
-| ------------- | ------- |
-| Zhengxuan Yuan | [![Gmail](https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:kevinsyuan@gmail.com) |
-| Yutong Xin | [![Gmail](https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:ytxinyvn@gmail.com) |
-| Zihao Wang | [![Outlook](https://img.shields.io/badge/Microsoft_Outlook-0078D4?style=for-the-badge&logo=microsoft-outlook&logoColor=white)](mailto:wzh-miasanmia@outlook.de) |
-| Fan Wang | [![Outlook](https://img.shields.io/badge/Microsoft_Outlook-0078D4?style=for-the-badge&logo=microsoft-outlook&logoColor=white)](mailto:fan.wang.tum@outlook.com) |
-| Lei Li | [![Email](https://img.shields.io/badge/Email-lei3.li%40tum.de-blue?style=for-the-badge&logo=gmail)](mailto:lei3.li@tum.de) |
-| Cheng Qian | [![Email](https://img.shields.io/badge/Email-cheng.qian%40tum.de-blue?style=for-the-badge&logo=gmail)](mailto:cheng.qian@tum.de) |
-
-
 
 
 ## License
